@@ -11,7 +11,7 @@ permissions:
 
 env:
   SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
-  SOURCE_SHA: 287197030c391ebd39d6c3671fe90567b67ad9ab
+  SOURCE_SHA: 7510f5a5fd165ec1123197ca7d915956d3b8b30f
   LOCK_REPOSITORY: bestfriendtwitch/dota2-tournaments-ci
   LOCK_SHA: 1cd80377e6ea979e9c2c45ffaafe878ef84943d4
   LOCK_SHA256: 3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66
@@ -58,7 +58,7 @@ jobs:
       - run: docker compose -f docker-compose.dev.yml up -d
       - run: bash infra/scripts/migrate-local.sh
       - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
-      - name: Reproduce first backend 500
+      - name: Verify public teams browser path
         run: pnpm --filter @dota-liga/e2e exec playwright test tests/public-teams.spec.ts --project=chromium --max-failures=1
       - name: Capture backend diagnostics
         if: failure()
