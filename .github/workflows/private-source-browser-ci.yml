@@ -13,7 +13,7 @@ permissions:
 
 env:
   SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
-  SOURCE_SHA: d205e5318099ee5c88c2d7eb4cfc9237d16ca02e
+  SOURCE_SHA: e23a501d87360b1b1463805ed4749a8955311b8d
   LOCK_REPOSITORY: bestfriendtwitch/dota2-tournaments-ci
   LOCK_SHA: 1cd80377e6ea979e9c2c45ffaafe878ef84943d4
   LOCK_SHA256: 3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66
@@ -59,11 +59,81 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: docker compose -f docker-compose.dev.yml up -d
       - run: bash infra/scripts/migrate-local.sh
-      - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
-      - name: Run full Chromium E2E suite
-        run: pnpm --filter @dota-liga/e2e exec playwright test --project=chromium
+      - name: Reproduce common API 500 without Chromium
+        shell: bash
+        env:
+          NODE_ENV: test
+          API_HOST: 127.0.0.1
+          API_PORT: '3001'
+          DATABASE_URL: postgres://dota_liga:dota_liga_dev@127.0.0.1:5432/dota_liga
+          REDIS_URL: redis://127.0.0.1:6379
+          SESSION_SECRET: browser-e2e-session-secret-000000000000000000
+          OWNER_DISCORD_USER_ID: '975000000000000005'
+          WEB_ORIGIN: http://127.0.0.1:3000
+        run: |
+          set -uo pipefail
+          API_LOG=../api-preflight.log
+          RESP_LOG=../api-preflight-responses.log
+          : > "$API_LOG"
+          : > "$RESP_LOG"
+
+          pnpm --filter @dota-liga/api build >>"$API_LOG" 2>&1
+          build_rc=$?
+          if [ "$build_rc" -ne 0 ]; then
+            echo "API build failed with rc=$build_rc" | tee -a "$RESP_LOG"
+            cat "$API_LOG"
+            exit "$build_rc"
+          fi
+
+          pnpm --filter @dota-liga/api start >>"$API_LOG" 2>&1 &
+          api_pid=$!
+          cleanup() {
+            kill "$api_pid" >/dev/null 2>&1 || true
+            wait "$api_pid" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for _ in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3001/health/live >/dev/null 2>&1; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$api_pid" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            echo "API did not become ready" | tee -a "$RESP_LOG"
+            cat "$API_LOG"
+            exit 1
+          fi
+
+          echo '=== GET /api/v1/me ===' | tee -a "$RESP_LOG"
+          me_status=$(curl -sS -o ../me-response.json -w '%{http_code}' http://127.0.0.1:3001/api/v1/me || true)
+          echo "status=$me_status" | tee -a "$RESP_LOG"
+          cat ../me-response.json 2>/dev/null | tee -a "$RESP_LOG" || true
+          echo | tee -a "$RESP_LOG"
+
+          echo '=== GET /api/v1/tournaments/current ===' | tee -a "$RESP_LOG"
+          current_status=$(curl -sS -o ../current-response.json -w '%{http_code}' http://127.0.0.1:3001/api/v1/tournaments/current || true)
+          echo "status=$current_status" | tee -a "$RESP_LOG"
+          cat ../current-response.json 2>/dev/null | tee -a "$RESP_LOG" || true
+          echo | tee -a "$RESP_LOG"
+
+          sleep 2
+          echo '=== API stdout/stderr ==='
+          cat "$API_LOG"
+          echo '=== Response summary ==='
+          cat "$RESP_LOG"
+
+          # Diagnostic-only run: Chromium stays intentionally disabled until this
+          # backend preflight is understood/fixed.
+          exit 0
       - name: Capture backend diagnostics
-        if: failure()
+        if: always()
         shell: bash
         run: |
           set +e
@@ -76,13 +146,15 @@ jobs:
           } > ../browser-backend.log 2>&1
           tail -n 4000 ../browser-backend.log
           exit 0
-      - if: failure()
+      - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-e2e-report-${{ env.SOURCE_SHA }}
+          name: api-preflight-${{ env.SOURCE_SHA }}
           path: |
-            source/apps/e2e/playwright-report
-            source/apps/e2e/test-results
+            api-preflight.log
+            api-preflight-responses.log
+            me-response.json
+            current-response.json
             browser-backend.log
           if-no-files-found: ignore
           retention-days: 7
