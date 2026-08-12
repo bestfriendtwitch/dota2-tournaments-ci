@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate-lockfile:
@@ -37,6 +37,17 @@ jobs:
           test -s pnpm-lock.yaml
       - name: Prove generated lockfile is frozen-install compatible
         run: pnpm install --lockfile-only --frozen-lockfile
+      - name: Commit generated lockfile to the public CI mirror
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          if git diff --cached --quiet; then
+            echo "pnpm-lock.yaml is unchanged"
+          else
+            git commit -m "Pin pnpm lockfile [skip ci]"
+            git push
+          fi
       - name: Write provenance
         run: |
           {
@@ -45,6 +56,7 @@ jobs:
             echo "pnpm=10.15.0"
             echo "node=$(node --version)"
             echo "generated_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "lockfile_sha256=$(sha256sum pnpm-lock.yaml | awk '{print $1}')"
           } > lockfile-provenance.txt
       - name: Upload generated lockfile
         uses: actions/upload-artifact@v4
