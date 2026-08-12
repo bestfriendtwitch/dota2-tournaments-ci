@@ -19,7 +19,7 @@ env:
 jobs:
   browser-e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: source
@@ -58,8 +58,8 @@ jobs:
       - run: docker compose -f docker-compose.dev.yml up -d
       - run: bash infra/scripts/migrate-local.sh
       - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
-      - name: Verify public teams browser path
-        run: pnpm --filter @dota-liga/e2e exec playwright test tests/public-teams.spec.ts --project=chromium --max-failures=1
+      - name: Run full Chromium E2E suite
+        run: pnpm --filter @dota-liga/e2e exec playwright test --project=chromium
       - name: Capture backend diagnostics
         if: failure()
         shell: bash
