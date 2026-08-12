@@ -83,7 +83,9 @@ jobs:
             exit "$rc"
           }
 
-          pnpm --filter @dota-liga/api start >>"$API_LOG" 2>&1 &
+          # Start the built Node entrypoint directly so $! is the actual server
+          # process rather than a pnpm wrapper that can leave a child behind.
+          node apps/api/dist/main.js >>"$API_LOG" 2>&1 &
           api_pid=$!
           cleanup() {
             kill "$api_pid" >/dev/null 2>&1 || true
@@ -130,7 +132,24 @@ jobs:
             exit 1
           fi
 
-          echo "API preflight healthy; Chromium is allowed to start." | tee -a "$RESP_LOG"
+          echo "API preflight healthy; stopping diagnostic server before Chromium." | tee -a "$RESP_LOG"
+          cleanup
+          trap - EXIT
+
+          port_released=0
+          for _ in $(seq 1 20); do
+            if ! curl -fsS http://127.0.0.1:3001/health/live >/dev/null 2>&1; then
+              port_released=1
+              break
+            fi
+            sleep 0.25
+          done
+          if [ "$port_released" -ne 1 ]; then
+            echo "API preflight process still owns port 3001; Chromium will not start." | tee -a "$RESP_LOG"
+            exit 1
+          fi
+
+          echo "API preflight healthy and port 3001 released; Chromium is allowed to start." | tee -a "$RESP_LOG"
       - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
       - name: Run full Chromium E2E suite
         run: pnpm --filter @dota-liga/e2e exec playwright test --project=chromium
