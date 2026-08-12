@@ -1,0 +1,42 @@
+{
+  "name": "@dota-liga/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsup src/main.ts src/ops/postgres-backup-offsite.ts --format esm --platform node --out-dir dist --clean",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm test:unit",
+    "test:unit": "tsx --test src/auth/auth.crypto.test.ts src/match-lobby.crypto.test.ts src/ops/postgres-backup-offsite.crypto.test.ts",
+    "test:integration": "tsx --test --test-concurrency=1 src/integration/*.integration.test.ts",
+    "ops:object-storage:preflight": "tsx src/ops/object-storage-preflight.ts",
+    "ops:object-storage:cleanup": "tsx src/ops/object-storage-cleanup.ts",
+    "ops:backup:offsite": "tsx src/ops/postgres-backup-offsite.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0",
+    "@dota-liga/config": "workspace:*",
+    "@dota-liga/contracts": "workspace:*",
+    "@dota-liga/database": "workspace:*",
+    "@dota-liga/permissions": "workspace:*",
+    "@fastify/cookie": "^11.0.0",
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-fastify": "^11.0.0",
+    "ioredis": "^5.7.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/ws": "^8.5.14",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.0",
+    "typescript": "5.9.3"
+  }
+}
