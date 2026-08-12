@@ -1,6 +1,11 @@
 name: Private source platform CI
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/private-source-platform-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -8,7 +13,7 @@ permissions:
 
 env:
   SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
-  SOURCE_SHA: 2bd6d825b4a636f7f8b7f0813d24d22467429e55
+  SOURCE_SHA: 7510f5a5fd165ec1123197ca7d915956d3b8b30f
   LOCK_REPOSITORY: bestfriendtwitch/dota2-tournaments-ci
   LOCK_SHA: 1cd80377e6ea979e9c2c45ffaafe878ef84943d4
   LOCK_SHA256: 3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66
