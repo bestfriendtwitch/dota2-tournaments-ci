@@ -59,6 +59,20 @@ jobs:
       - run: bash infra/scripts/migrate-local.sh
       - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
       - run: pnpm --filter @dota-liga/e2e test
+      - name: Capture backend diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          {
+            echo '=== docker compose ps ==='
+            docker compose -f docker-compose.dev.yml ps -a
+            echo
+            echo '=== docker compose logs ==='
+            docker compose -f docker-compose.dev.yml logs --no-color --timestamps
+          } > ../browser-backend.log 2>&1
+          tail -n 4000 ../browser-backend.log
+          exit 0
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -66,6 +80,7 @@ jobs:
           path: |
             source/apps/e2e/playwright-report
             source/apps/e2e/test-results
+            browser-backend.log
           if-no-files-found: ignore
           retention-days: 7
       - if: always()
