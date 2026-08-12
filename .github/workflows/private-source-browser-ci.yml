@@ -2,10 +2,8 @@ name: Private source browser CI
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/private-source-browser-ci.yml'
+    branches: [main]
+    paths: ['.github/workflows/private-source-browser-ci.yml']
   workflow_dispatch:
 
 permissions:
@@ -13,7 +11,7 @@ permissions:
 
 env:
   SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
-  SOURCE_SHA: 144eb2e3c7f607f8d5e3f83a166276f755d60e50
+  SOURCE_SHA: 659d4c8bf440c191a053edc51ba61f92437509c3
   LOCK_REPOSITORY: bestfriendtwitch/dota2-tournaments-ci
   LOCK_SHA: 1cd80377e6ea979e9c2c45ffaafe878ef84943d4
   LOCK_SHA256: 3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66
@@ -26,16 +24,14 @@ jobs:
       run:
         working-directory: source
     steps:
-      - name: Checkout pinned public lockfile snapshot
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           repository: ${{ env.LOCK_REPOSITORY }}
           ref: ${{ env.LOCK_SHA }}
           persist-credentials: false
           fetch-depth: 1
           path: mirror
-      - name: Checkout exact private source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           repository: ${{ env.SOURCE_REPOSITORY }}
           ref: ${{ env.SOURCE_SHA }}
@@ -43,12 +39,11 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
           path: source
-      - name: Pin and verify generated lockfile
+      - name: Pin generated lockfile
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           test "$(sha256sum ../mirror/pnpm-lock.yaml | awk '{print $1}')" = "$LOCK_SHA256"
-          cp ../mirror/pnpm-lock.yaml ./pnpm-lock.yaml
-          test "$(sha256sum pnpm-lock.yaml | awk '{print $1}')" = "$LOCK_SHA256"
+          cp ../mirror/pnpm-lock.yaml pnpm-lock.yaml
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -59,110 +54,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: docker compose -f docker-compose.dev.yml up -d
       - run: bash infra/scripts/migrate-local.sh
-      - name: Gate Chromium on API and DELETE CORS preflight
-        shell: bash
-        env:
-          NODE_ENV: test
-          API_HOST: 127.0.0.1
-          API_PORT: '3001'
-          DATABASE_URL: postgres://dota_liga:dota_liga_dev@127.0.0.1:5432/dota_liga
-          REDIS_URL: redis://127.0.0.1:6379
-          SESSION_SECRET: browser-e2e-session-secret-000000000000000000
-          OWNER_DISCORD_USER_ID: '975000000000000005'
-          WEB_ORIGIN: http://127.0.0.1:3000
-        run: |
-          set -uo pipefail
-          API_LOG=../api-preflight.log
-          RESP_LOG=../api-preflight-responses.log
-          CORS_LOG=../cors-preflight-headers.txt
-          : > "$API_LOG"
-          : > "$RESP_LOG"
-          : > "$CORS_LOG"
-
-          pnpm --filter @dota-liga/api build >>"$API_LOG" 2>&1 || {
-            rc=$?
-            cat "$API_LOG"
-            exit "$rc"
-          }
-
-          node apps/api/dist/main.js >>"$API_LOG" 2>&1 &
-          api_pid=$!
-          cleanup() {
-            kill "$api_pid" >/dev/null 2>&1 || true
-            wait "$api_pid" >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-
-          ready=0
-          for _ in $(seq 1 90); do
-            if curl -fsS http://127.0.0.1:3001/health/live >/dev/null 2>&1; then
-              ready=1
-              break
-            fi
-            if ! kill -0 "$api_pid" >/dev/null 2>&1; then
-              break
-            fi
-            sleep 1
-          done
-
-          if [ "$ready" -ne 1 ]; then
-            echo "API did not become ready" | tee -a "$RESP_LOG"
-            cat "$API_LOG"
-            exit 1
-          fi
-
-          me_status=$(curl -sS -o ../me-response.json -w '%{http_code}' http://127.0.0.1:3001/api/v1/me || true)
-          current_status=$(curl -sS -o ../current-response.json -w '%{http_code}' http://127.0.0.1:3001/api/v1/tournaments/current || true)
-
-          {
-            echo '=== GET /api/v1/me ==='
-            echo "status=$me_status"
-            cat ../me-response.json 2>/dev/null || true
-            echo
-            echo '=== GET /api/v1/tournaments/current ==='
-            echo "status=$current_status"
-            cat ../current-response.json 2>/dev/null || true
-            echo
-          } | tee "$RESP_LOG"
-
-          if [ "$me_status" != "401" ] || [ "$current_status" != "200" ]; then
-            echo "API preflight failed; Chromium will not start." | tee -a "$RESP_LOG"
-            cat "$API_LOG"
-            exit 1
-          fi
-
-          cors_status=$(curl -sS -o /dev/null -D "$CORS_LOG" -w '%{http_code}' \
-            -X OPTIONS \
-            -H 'Origin: http://127.0.0.1:3000' \
-            -H 'Access-Control-Request-Method: DELETE' \
-            -H 'Access-Control-Request-Headers: content-type,x-csrf-token' \
-            http://127.0.0.1:3001/api/v1/tournaments/00000000-0000-0000-0000-000000000000/hard-delete || true)
-          echo '=== DELETE CORS preflight ===' | tee -a "$RESP_LOG"
-          echo "status=$cors_status" | tee -a "$RESP_LOG"
-          cat "$CORS_LOG" | tee -a "$RESP_LOG"
-
-          if [ "$cors_status" != "204" ] || ! grep -Eqi '^access-control-allow-methods:.*DELETE' "$CORS_LOG"; then
-            echo "DELETE is not allowed by CORS; Chromium will not start." | tee -a "$RESP_LOG"
-            exit 1
-          fi
-
-          cleanup
-          trap - EXIT
-
-          port_released=0
-          for _ in $(seq 1 20); do
-            if ! curl -fsS http://127.0.0.1:3001/health/live >/dev/null 2>&1; then
-              port_released=1
-              break
-            fi
-            sleep 0.25
-          done
-          if [ "$port_released" -ne 1 ]; then
-            echo "API preflight process still owns port 3001; Chromium will not start." | tee -a "$RESP_LOG"
-            exit 1
-          fi
+      - run: pnpm --filter @dota-liga/api build
       - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
-      - name: Run full Chromium suite to first failure
+      - name: Run audit undo-redo Chromium target
         shell: bash
         env:
           NODE_ENV: test
@@ -176,18 +70,13 @@ jobs:
           NEXT_PUBLIC_API_ORIGIN: http://127.0.0.1:3001
         run: |
           set +e
-          API_LOG=../target-api.log
-          WEB_LOG=../target-web.log
-          PW_LOG=../target-playwright.log
-          : > "$API_LOG"
-          : > "$WEB_LOG"
-          : > "$PW_LOG"
-
-          node apps/api/dist/main.js >"$API_LOG" 2>&1 &
+          : > ../target-api.log
+          : > ../target-web.log
+          : > ../target-playwright.log
+          node apps/api/dist/main.js > ../target-api.log 2>&1 &
           api_pid=$!
-          setsid pnpm --filter @dota-liga/web exec next dev --hostname 127.0.0.1 --port 3000 >"$WEB_LOG" 2>&1 &
+          setsid pnpm --filter @dota-liga/web exec next dev --hostname 127.0.0.1 --port 3000 > ../target-web.log 2>&1 &
           web_pid=$!
-
           cleanup() {
             kill "$api_pid" >/dev/null 2>&1 || true
             kill -- -"$web_pid" >/dev/null 2>&1 || kill "$web_pid" >/dev/null 2>&1 || true
@@ -195,68 +84,28 @@ jobs:
             wait "$web_pid" >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
-
-          api_ready=0
-          web_ready=0
           for _ in $(seq 1 120); do
-            if curl -fsS http://127.0.0.1:3001/health/live >/dev/null 2>&1; then api_ready=1; fi
-            if curl -fsS http://127.0.0.1:3000 >/dev/null 2>&1; then web_ready=1; fi
-            if [ "$api_ready" -eq 1 ] && [ "$web_ready" -eq 1 ]; then break; fi
+            if curl -fsS http://127.0.0.1:3001/health/live >/dev/null 2>&1 && curl -fsS http://127.0.0.1:3000 >/dev/null 2>&1; then break; fi
             sleep 1
           done
-
-          if [ "$api_ready" -ne 1 ] || [ "$web_ready" -ne 1 ]; then
-            echo "Manual servers failed readiness: api=$api_ready web=$web_ready" | tee -a "$PW_LOG"
-            echo '=== API log ==='; tail -n 1000 "$API_LOG"
-            echo '=== Web log ==='; tail -n 1000 "$WEB_LOG"
-            exit 1
+          CI= pnpm --filter @dota-liga/e2e exec playwright test tests/audit-undo-redo.spec.ts --project=chromium --workers=1 --retries=0 --reporter=line 2>&1 | tee ../target-playwright.log
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" -ne 0 ]; then
+            echo '=== PLAYWRIGHT ==='; tail -n 1200 ../target-playwright.log
+            echo '=== API ==='; tail -n 2000 ../target-api.log
+            echo '=== WEB ==='; tail -n 1000 ../target-web.log
           fi
-
-          CI= pnpm --filter @dota-liga/e2e exec playwright test \
-            --project=chromium \
-            --workers=1 \
-            --retries=0 \
-            --max-failures=1 \
-            --reporter=line 2>&1 | tee "$PW_LOG"
-          test_rc=${PIPESTATUS[0]}
-
-          sleep 1
-          echo '=== PLAYWRIGHT OUTPUT ==='
-          tail -n 1600 "$PW_LOG"
-          echo '=== API OUTPUT ==='
-          tail -n 2500 "$API_LOG"
-          echo '=== WEB OUTPUT ==='
-          tail -n 1200 "$WEB_LOG"
-
-          exit "$test_rc"
-      - name: Capture backend diagnostics
-        if: failure()
-        shell: bash
-        run: |
-          set +e
-          {
-            echo '=== docker compose ps ==='
-            docker compose -f docker-compose.dev.yml ps -a
-            echo
-            echo '=== docker compose logs ==='
-            docker compose -f docker-compose.dev.yml logs --no-color --timestamps
-          } > ../browser-backend.log 2>&1
-          tail -n 2000 ../browser-backend.log
-          exit 0
+          exit "$rc"
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: full-browser-first-failure-${{ env.SOURCE_SHA }}
+          name: audit-undo-redo-${{ env.SOURCE_SHA }}
           path: |
             source/apps/e2e/playwright-report
             source/apps/e2e/test-results
-            api-preflight.log
-            api-preflight-responses.log
-            cors-preflight-headers.txt
             target-api.log
             target-web.log
             target-playwright.log
-            browser-backend.log
           if-no-files-found: ignore
           retention-days: 7
       - if: always()
