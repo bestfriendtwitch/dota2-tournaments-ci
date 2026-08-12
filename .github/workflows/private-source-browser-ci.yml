@@ -83,8 +83,6 @@ jobs:
             exit "$rc"
           }
 
-          # Start the built Node entrypoint directly so $! is the actual server
-          # process rather than a pnpm wrapper that can leave a child behind.
           node apps/api/dist/main.js >>"$API_LOG" 2>&1 &
           api_pid=$!
           cleanup() {
@@ -132,7 +130,6 @@ jobs:
             exit 1
           fi
 
-          echo "API preflight healthy; stopping diagnostic server before Chromium." | tee -a "$RESP_LOG"
           cleanup
           trap - EXIT
 
@@ -148,11 +145,76 @@ jobs:
             echo "API preflight process still owns port 3001; Chromium will not start." | tee -a "$RESP_LOG"
             exit 1
           fi
-
-          echo "API preflight healthy and port 3001 released; Chromium is allowed to start." | tee -a "$RESP_LOG"
       - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
-      - name: Run full Chromium E2E suite
-        run: pnpm --filter @dota-liga/e2e exec playwright test --project=chromium
+      - name: Reproduce first Chromium failure with captured server logs
+        shell: bash
+        env:
+          NODE_ENV: test
+          API_HOST: 127.0.0.1
+          API_PORT: '3001'
+          DATABASE_URL: postgres://dota_liga:dota_liga_dev@127.0.0.1:5432/dota_liga
+          REDIS_URL: redis://127.0.0.1:6379
+          SESSION_SECRET: browser-e2e-session-secret-000000000000000000
+          OWNER_DISCORD_USER_ID: '975000000000000005'
+          WEB_ORIGIN: http://127.0.0.1:3000
+          NEXT_PUBLIC_API_ORIGIN: http://127.0.0.1:3001
+        run: |
+          set +e
+          API_LOG=../target-api.log
+          WEB_LOG=../target-web.log
+          PW_LOG=../target-playwright.log
+          : > "$API_LOG"
+          : > "$WEB_LOG"
+          : > "$PW_LOG"
+
+          node apps/api/dist/main.js >"$API_LOG" 2>&1 &
+          api_pid=$!
+          setsid pnpm --filter @dota-liga/web exec next dev --hostname 127.0.0.1 --port 3000 >"$WEB_LOG" 2>&1 &
+          web_pid=$!
+
+          cleanup() {
+            kill "$api_pid" >/dev/null 2>&1 || true
+            kill -- -"$web_pid" >/dev/null 2>&1 || kill "$web_pid" >/dev/null 2>&1 || true
+            wait "$api_pid" >/dev/null 2>&1 || true
+            wait "$web_pid" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          api_ready=0
+          web_ready=0
+          for _ in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:3001/health/live >/dev/null 2>&1; then api_ready=1; fi
+            if curl -fsS http://127.0.0.1:3000 >/dev/null 2>&1; then web_ready=1; fi
+            if [ "$api_ready" -eq 1 ] && [ "$web_ready" -eq 1 ]; then break; fi
+            sleep 1
+          done
+
+          if [ "$api_ready" -ne 1 ] || [ "$web_ready" -ne 1 ]; then
+            echo "Manual servers failed readiness: api=$api_ready web=$web_ready" | tee -a "$PW_LOG"
+            echo '=== API log ==='; tail -n 1000 "$API_LOG"
+            echo '=== Web log ==='; tail -n 1000 "$WEB_LOG"
+            exit 1
+          fi
+
+          # CI is deliberately blank here so Playwright reuses the manually
+          # started servers instead of spawning opaque webServer children.
+          CI= pnpm --filter @dota-liga/e2e exec playwright test \
+            --project=chromium \
+            --workers=1 \
+            --retries=0 \
+            --max-failures=1 \
+            --reporter=line 2>&1 | tee "$PW_LOG"
+          test_rc=${PIPESTATUS[0]}
+
+          sleep 1
+          echo '=== FIRST-FAIL PLAYWRIGHT OUTPUT ==='
+          tail -n 1200 "$PW_LOG"
+          echo '=== API OUTPUT AROUND FIRST FAILURE ==='
+          tail -n 2000 "$API_LOG"
+          echo '=== WEB OUTPUT AROUND FIRST FAILURE ==='
+          tail -n 1000 "$WEB_LOG"
+
+          exit "$test_rc"
       - name: Capture backend diagnostics
         if: failure()
         shell: bash
@@ -165,19 +227,18 @@ jobs:
             echo '=== docker compose logs ==='
             docker compose -f docker-compose.dev.yml logs --no-color --timestamps
           } > ../browser-backend.log 2>&1
-          tail -n 4000 ../browser-backend.log
+          tail -n 2000 ../browser-backend.log
           exit 0
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-e2e-report-${{ env.SOURCE_SHA }}
+          name: first-browser-failure-${{ env.SOURCE_SHA }}
           path: |
-            source/apps/e2e/playwright-report
-            source/apps/e2e/test-results
             api-preflight.log
             api-preflight-responses.log
-            me-response.json
-            current-response.json
+            target-api.log
+            target-web.log
+            target-playwright.log
             browser-backend.log
           if-no-files-found: ignore
           retention-days: 7
