@@ -11,7 +11,7 @@ permissions:
 
 env:
   SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
-  SOURCE_SHA: ad3bbd63af63222f04fe24ed8428fb6dd2908459
+  SOURCE_SHA: 4d815daa08b4c5e3ba30a7ac783692b2d02a0f8b
   LOCK_REPOSITORY: bestfriendtwitch/dota2-tournaments-ci
   LOCK_SHA: 1cd80377e6ea979e9c2c45ffaafe878ef84943d4
   LOCK_SHA256: 3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66
