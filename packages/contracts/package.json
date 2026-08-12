@@ -1,0 +1,24 @@
+{
+  "name": "@dota-liga/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./replacements": "./src/replacements.ts",
+    "./match-operations": "./src/match-operations.ts",
+    "./tournament-lifecycle": "./src/tournament-lifecycle.ts",
+    "./tournament-create": "./src/tournament-create.ts",
+    "./tournament-setup": "./src/tournament-setup.ts",
+    "./tournament-rules": "./src/tournament-rules.ts",
+    "./profile-verification": "./src/profile-verification.ts",
+    "./notifications": "./src/notifications.ts",
+    "./site-admin": "./src/site-admin.ts",
+    "./twitch-streams": "./src/twitch-streams.ts",
+    "./team-logo": "./src/team-logo.ts",
+    "./audit-actions": "./src/audit-actions.ts"
+  },
+  "scripts": { "typecheck": "tsc --noEmit", "build": "tsc --noEmit", "test": "node --test" },
+  "dependencies": { "zod": "^4.1.0" },
+  "devDependencies": { "typescript": "5.9.3" }
+}
