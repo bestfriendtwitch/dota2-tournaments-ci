@@ -162,7 +162,7 @@ jobs:
             exit 1
           fi
       - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
-      - name: Run archive trash-management Chromium target
+      - name: Run full Chromium suite to first failure
         shell: bash
         env:
           NODE_ENV: test
@@ -213,7 +213,6 @@ jobs:
           fi
 
           CI= pnpm --filter @dota-liga/e2e exec playwright test \
-            tests/archive-trash-management.spec.ts \
             --project=chromium \
             --workers=1 \
             --retries=0 \
@@ -222,12 +221,12 @@ jobs:
           test_rc=${PIPESTATUS[0]}
 
           sleep 1
-          echo '=== TARGET PLAYWRIGHT OUTPUT ==='
-          tail -n 1200 "$PW_LOG"
+          echo '=== PLAYWRIGHT OUTPUT ==='
+          tail -n 1600 "$PW_LOG"
           echo '=== API OUTPUT ==='
-          tail -n 2000 "$API_LOG"
+          tail -n 2500 "$API_LOG"
           echo '=== WEB OUTPUT ==='
-          tail -n 1000 "$WEB_LOG"
+          tail -n 1200 "$WEB_LOG"
 
           exit "$test_rc"
       - name: Capture backend diagnostics
@@ -247,8 +246,10 @@ jobs:
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: archive-cors-target-${{ env.SOURCE_SHA }}
+          name: full-browser-first-failure-${{ env.SOURCE_SHA }}
           path: |
+            source/apps/e2e/playwright-report
+            source/apps/e2e/test-results
             api-preflight.log
             api-preflight-responses.log
             cors-preflight-headers.txt
