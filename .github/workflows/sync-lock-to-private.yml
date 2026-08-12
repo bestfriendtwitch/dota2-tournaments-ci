@@ -1,0 +1,58 @@
+name: Sync lockfile to private source
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sync-lock-to-private.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sync-lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout public lockfile snapshot
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          path: mirror
+
+      - name: Checkout private working branch
+        uses: actions/checkout@v4
+        with:
+          repository: bestfriendtwitch/dota2-tournaments
+          ref: agent/pnpm-lockfile-frozen-ci
+          token: ${{ secrets.DOTA_LIGA_SOURCE_TOKEN }}
+          persist-credentials: true
+          fetch-depth: 1
+          path: source
+
+      - name: Commit canonical lockfile and frozen CI install
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp mirror/pnpm-lock.yaml source/pnpm-lock.yaml
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('source/.github/workflows/ci.yml')
+          text = path.read_text()
+          old = 'pnpm install --no-frozen-lockfile'
+          new = 'pnpm install --frozen-lockfile'
+          if old in text:
+              text = text.replace(old, new)
+          elif new not in text:
+              raise SystemExit('Expected pnpm install command not found in ci.yml')
+          path.write_text(text)
+          PY
+          cd source
+          git config user.name 'dota-liga-ci'
+          git config user.email 'actions@users.noreply.github.com'
+          git add pnpm-lock.yaml .github/workflows/ci.yml
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Зафиксировать pnpm lockfile и frozen CI install'
+          git push origin HEAD:agent/pnpm-lockfile-frozen-ci
