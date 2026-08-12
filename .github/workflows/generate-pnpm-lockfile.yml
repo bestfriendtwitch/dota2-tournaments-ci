@@ -1,9 +1,6 @@
 name: Generate pnpm lockfile
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
