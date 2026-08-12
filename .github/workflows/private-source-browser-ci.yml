@@ -13,7 +13,7 @@ permissions:
 
 env:
   SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
-  SOURCE_SHA: e23a501d87360b1b1463805ed4749a8955311b8d
+  SOURCE_SHA: 144eb2e3c7f607f8d5e3f83a166276f755d60e50
   LOCK_REPOSITORY: bestfriendtwitch/dota2-tournaments-ci
   LOCK_SHA: 1cd80377e6ea979e9c2c45ffaafe878ef84943d4
   LOCK_SHA256: 3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66
@@ -59,7 +59,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: docker compose -f docker-compose.dev.yml up -d
       - run: bash infra/scripts/migrate-local.sh
-      - name: Gate Chromium on API preflight
+      - name: Gate Chromium on API and DELETE CORS preflight
         shell: bash
         env:
           NODE_ENV: test
@@ -74,8 +74,10 @@ jobs:
           set -uo pipefail
           API_LOG=../api-preflight.log
           RESP_LOG=../api-preflight-responses.log
+          CORS_LOG=../cors-preflight-headers.txt
           : > "$API_LOG"
           : > "$RESP_LOG"
+          : > "$CORS_LOG"
 
           pnpm --filter @dota-liga/api build >>"$API_LOG" 2>&1 || {
             rc=$?
@@ -125,8 +127,22 @@ jobs:
 
           if [ "$me_status" != "401" ] || [ "$current_status" != "200" ]; then
             echo "API preflight failed; Chromium will not start." | tee -a "$RESP_LOG"
-            sleep 1
             cat "$API_LOG"
+            exit 1
+          fi
+
+          cors_status=$(curl -sS -o /dev/null -D "$CORS_LOG" -w '%{http_code}' \
+            -X OPTIONS \
+            -H 'Origin: http://127.0.0.1:3000' \
+            -H 'Access-Control-Request-Method: DELETE' \
+            -H 'Access-Control-Request-Headers: content-type,x-csrf-token' \
+            http://127.0.0.1:3001/api/v1/tournaments/00000000-0000-0000-0000-000000000000/hard-delete || true)
+          echo '=== DELETE CORS preflight ===' | tee -a "$RESP_LOG"
+          echo "status=$cors_status" | tee -a "$RESP_LOG"
+          cat "$CORS_LOG" | tee -a "$RESP_LOG"
+
+          if [ "$cors_status" != "204" ] || ! grep -Eqi '^access-control-allow-methods:.*DELETE' "$CORS_LOG"; then
+            echo "DELETE is not allowed by CORS; Chromium will not start." | tee -a "$RESP_LOG"
             exit 1
           fi
 
@@ -146,7 +162,7 @@ jobs:
             exit 1
           fi
       - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
-      - name: Reproduce first Chromium failure with captured server logs
+      - name: Run archive trash-management Chromium target
         shell: bash
         env:
           NODE_ENV: test
@@ -196,9 +212,8 @@ jobs:
             exit 1
           fi
 
-          # CI is deliberately blank here so Playwright reuses the manually
-          # started servers instead of spawning opaque webServer children.
           CI= pnpm --filter @dota-liga/e2e exec playwright test \
+            tests/archive-trash-management.spec.ts \
             --project=chromium \
             --workers=1 \
             --retries=0 \
@@ -207,11 +222,11 @@ jobs:
           test_rc=${PIPESTATUS[0]}
 
           sleep 1
-          echo '=== FIRST-FAIL PLAYWRIGHT OUTPUT ==='
+          echo '=== TARGET PLAYWRIGHT OUTPUT ==='
           tail -n 1200 "$PW_LOG"
-          echo '=== API OUTPUT AROUND FIRST FAILURE ==='
+          echo '=== API OUTPUT ==='
           tail -n 2000 "$API_LOG"
-          echo '=== WEB OUTPUT AROUND FIRST FAILURE ==='
+          echo '=== WEB OUTPUT ==='
           tail -n 1000 "$WEB_LOG"
 
           exit "$test_rc"
@@ -232,10 +247,11 @@ jobs:
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: first-browser-failure-${{ env.SOURCE_SHA }}
+          name: archive-cors-target-${{ env.SOURCE_SHA }}
           path: |
             api-preflight.log
             api-preflight-responses.log
+            cors-preflight-headers.txt
             target-api.log
             target-web.log
             target-playwright.log
