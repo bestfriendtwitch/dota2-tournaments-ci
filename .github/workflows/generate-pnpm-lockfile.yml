@@ -1,0 +1,57 @@
+name: Generate pnpm lockfile
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.15.0
+          run_install: false
+      - name: Record exact dependency toolchain
+        run: |
+          node --version
+          pnpm --version
+          test "$(pnpm --version)" = "10.15.0"
+      - name: Generate workspace lockfile from registry
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+        run: |
+          rm -f pnpm-lock.yaml
+          pnpm install --lockfile-only --no-frozen-lockfile
+          test -s pnpm-lock.yaml
+      - name: Prove generated lockfile is frozen-install compatible
+        run: pnpm install --lockfile-only --frozen-lockfile
+      - name: Write provenance
+        run: |
+          {
+            echo "source_repository=bestfriendtwitch/dota2-tournaments"
+            echo "source_ref=agent/pnpm-lockfile-frozen-ci"
+            echo "pnpm=10.15.0"
+            echo "node=$(node --version)"
+            echo "generated_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > lockfile-provenance.txt
+      - name: Upload generated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-lockfile-pnpm-10.15.0
+          path: |
+            pnpm-lock.yaml
+            lockfile-provenance.txt
+          if-no-files-found: error
+          retention-days: 7
