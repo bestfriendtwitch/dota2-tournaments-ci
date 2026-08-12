@@ -1,0 +1,17 @@
+{
+  "name": "@dota-liga/e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^22.19.19",
+    "postgres": "^3.4.7",
+    "typescript": "^5.9.3"
+  }
+}
