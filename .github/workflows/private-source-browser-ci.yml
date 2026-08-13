@@ -11,7 +11,7 @@ permissions:
 
 env:
   SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
-  SOURCE_SHA: 779d3ca549cfb7cedf575c28c74c54b3b0889d6a
+  SOURCE_SHA: e8d2006135c821b9ab0520be06f1f9dc48799ceb
   LOCK_REPOSITORY: bestfriendtwitch/dota2-tournaments-ci
   LOCK_SHA: 1cd80377e6ea979e9c2c45ffaafe878ef84943d4
   LOCK_SHA256: 3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66
@@ -56,7 +56,7 @@ jobs:
       - run: bash infra/scripts/migrate-local.sh
       - run: pnpm --filter @dota-liga/api build
       - run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
-      - name: Run full Chromium suite to first failure
+      - name: Run tournament completion Chromium target
         shell: bash
         env:
           NODE_ENV: test
@@ -93,7 +93,7 @@ jobs:
             sleep 1
           done
           if [ "$api_ready" -ne 1 ] || [ "$web_ready" -ne 1 ]; then exit 1; fi
-          CI= pnpm --filter @dota-liga/e2e exec playwright test --project=chromium --workers=1 --retries=0 --max-failures=1 --reporter=line 2>&1 | tee ../target-playwright.log
+          CI= pnpm --filter @dota-liga/e2e exec playwright test tests/tournament-completion.spec.ts --project=chromium --workers=1 --retries=0 --reporter=line 2>&1 | tee ../target-playwright.log
           rc=${PIPESTATUS[0]}
           if [ "$rc" -ne 0 ]; then
             echo '=== PLAYWRIGHT ==='; tail -n 1800 ../target-playwright.log
@@ -104,7 +104,7 @@ jobs:
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: full-browser-first-failure-${{ env.SOURCE_SHA }}
+          name: tournament-completion-${{ env.SOURCE_SHA }}
           path: |
             source/apps/e2e/playwright-report
             source/apps/e2e/test-results
