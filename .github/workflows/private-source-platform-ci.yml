@@ -13,9 +13,7 @@ permissions:
 
 env:
   SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
-  SOURCE_SHA: 1085e2839f2ae4d5a844df0ba986ec1a93192100
-  LOCK_REPOSITORY: bestfriendtwitch/dota2-tournaments-ci
-  LOCK_SHA: 1cd80377e6ea979e9c2c45ffaafe878ef84943d4
+  SOURCE_SHA: 672056c6c76c290959ac7789fda0fb92d36e0ffe
   LOCK_SHA256: 3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66
 
 jobs:
@@ -26,14 +24,6 @@ jobs:
       run:
         working-directory: source
     steps:
-      - name: Checkout pinned public lockfile snapshot
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.LOCK_REPOSITORY }}
-          ref: ${{ env.LOCK_SHA }}
-          persist-credentials: false
-          fetch-depth: 1
-          path: mirror
       - name: Checkout exact private source
         uses: actions/checkout@v4
         with:
@@ -43,12 +33,11 @@ jobs:
           persist-credentials: false
           fetch-depth: 1
           path: source
-      - name: Pin and verify generated lockfile
+      - name: Verify committed lockfile
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(sha256sum ../mirror/pnpm-lock.yaml | awk '{print $1}')" = "$LOCK_SHA256"
-          cp ../mirror/pnpm-lock.yaml ./pnpm-lock.yaml
           test "$(sha256sum pnpm-lock.yaml | awk '{print $1}')" = "$LOCK_SHA256"
+          test -z "$(git status --short -- pnpm-lock.yaml)"
       - uses: actions/setup-node@v4
         with:
           node-version: 24
