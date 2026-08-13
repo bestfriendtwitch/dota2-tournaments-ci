@@ -1,4 +1,4 @@
-name: Export canonical lockfile bytes
+name: Export canonical lockfile artifact
 
 on:
   push:
@@ -22,10 +22,13 @@ jobs:
       - name: Verify canonical file
         run: |
           echo "3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66  pnpm-lock.yaml" | sha256sum -c -
+          echo "LOCK_BYTES=$(wc -c < pnpm-lock.yaml)"
+          echo "LOCK_B64_BYTES=$(base64 -w0 pnpm-lock.yaml | wc -c)"
 
-      - name: Export canonical file as base64 chunks
-        shell: bash
-        run: |
-          echo LOCK_B64_BEGIN
-          base64 -w 40000 pnpm-lock.yaml
-          echo LOCK_B64_END
+      - name: Upload exact canonical lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: canonical-pnpm-lockfile
+          path: pnpm-lock.yaml
+          if-no-files-found: error
+          retention-days: 1
