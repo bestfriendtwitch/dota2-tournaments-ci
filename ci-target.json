@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "5bfb01b82702c06b301700e0980ec191d060c420",
-  "requested_at": "2026-08-15T22:46:00Z",
+  "source_sha": "75843416256b32733f1493bd6efbd95565961078",
+  "requested_at": "2026-08-15T22:48:00Z",
   "purpose": "qa-staging-playwright-bootstrap"
 }
