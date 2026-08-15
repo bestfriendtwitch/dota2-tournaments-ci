@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "4569db6f1fb1963f99915d765392bb56c1c9bb59",
-  "requested_at": "2026-08-15T20:46:10Z",
-  "purpose": "pr-106-fixture-checkin-repair-without-phase-assumption"
+  "source_sha": "cd0b46e64dd58ba6c4c0991e623bb54ae54451cc",
+  "requested_at": "2026-08-15T20:47:10Z",
+  "purpose": "pr-106-fixture-checkin-repair-v3-corrected"
 }
