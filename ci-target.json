@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "8f42f33bf1308e3b89b5ffaa064805aee7c16678",
-  "requested_at": "2026-08-15T21:04:20Z",
-  "purpose": "pr-107-checkin-to-draft-transition"
+  "source_sha": "ae6439507f509a57782c6d605bb7cb0e102664e7",
+  "requested_at": "2026-08-15T21:19:35Z",
+  "purpose": "pr-108-fixture-window-time-constraint"
 }
