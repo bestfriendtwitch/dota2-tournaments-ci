@@ -17,7 +17,7 @@ env:
 jobs:
   platform-foundation:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout CI control repository
         uses: actions/checkout@v4
@@ -29,16 +29,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source_sha="$(python3 - <<'PY'
+          eval "$(python3 - <<'PY'
           import json
+          import shlex
           from pathlib import Path
           data = json.loads(Path('control/ci-target.json').read_text())
-          print(data['source_sha'])
+          print('source_sha=' + shlex.quote(str(data['source_sha'])))
+          print('purpose=' + shlex.quote(str(data.get('purpose', ''))))
           PY
           )"
           [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid source_sha" >&2; exit 1; }
+          [[ ${#purpose} -le 160 ]] || { echo "purpose too long" >&2; exit 1; }
           printf 'source_sha=%s\n' "$source_sha" >> "$GITHUB_OUTPUT"
+          printf 'purpose=%s\n' "$purpose" >> "$GITHUB_OUTPUT"
           echo "Validating private source SHA: $source_sha"
+          echo "Validation purpose: $purpose"
 
       - name: Checkout exact private source
         uses: actions/checkout@v4
@@ -119,6 +124,58 @@ jobs:
 
       - working-directory: source
         run: pnpm --filter @dota-liga/web build
+
+      - name: QA staging static validation
+        if: startsWith(steps.target.outputs.purpose, 'qa-')
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n infra/qa/up.sh
+          bash -n infra/qa/down.sh
+          bash -n infra/qa/print-codex-mcp-config.sh
+          node --check apps/e2e/qa/seed.mjs
+          QA_HOST_UID="$(id -u)" QA_HOST_GID="$(id -g)" docker compose -f docker-compose.qa.yml config >/dev/null
+
+      - name: QA staging runtime smoke
+        if: startsWith(steps.target.outputs.purpose, 'qa-')
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash infra/qa/up.sh
+          test -s .qa-state/owner.json
+          test -s .qa-state/captain1.json
+          test -s .qa-state/captain2.json
+          test -s .qa-state/player01.json
+          test -s .qa-state/manifest.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('.qa-state/manifest.json').read_text())
+          assert manifest['scenario'] == 'draft-ready'
+          assert manifest['participantCount'] == 10
+          assert manifest['expectedCheckIns'] == 10
+          assert set(manifest['users']) == {'owner', 'captain1', 'captain2', 'player01'}
+          for role in manifest['users']:
+              state = json.loads(Path(f'.qa-state/{role}.json').read_text())
+              names = {cookie['name'] for cookie in state['cookies']}
+              assert names == {'dota_liga_session', 'dota_liga_csrf'}
+          PY
+          test "$(stat -c '%a' .qa-state)" = "700"
+          for state in .qa-state/*.json; do test "$(stat -c '%a' "$state")" = "600"; done
+          curl --fail --silent --show-error http://127.0.0.1:3380/api/v1/me \
+            --cookie "dota_liga_session=$(python3 - <<'PY'
+          import json
+          print(next(c['value'] for c in json.load(open('.qa-state/owner.json'))['cookies'] if c['name'] == 'dota_liga_session'))
+          PY
+          )" | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data["user"]["siteRole"] == "OWNER"'
+
+      - name: Destroy QA staging runtime
+        if: always() && startsWith(steps.target.outputs.purpose, 'qa-')
+        working-directory: source
+        shell: bash
+        run: bash infra/qa/down.sh
 
       - if: always()
         working-directory: source
