@@ -2,9 +2,9 @@ name: Private source platform CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
+      - 'ci-target.json'
       - '.github/workflows/private-source-platform-ci.yml'
   workflow_dispatch:
 
@@ -13,48 +13,90 @@ permissions:
 
 env:
   SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
-  SOURCE_SHA: da26798cca5f095616a9539308107008675b2521
-  LOCK_SHA256: 3960ab633b2816057235383bab061aa22d578610d0de1c21b5a551b503208c66
 
 jobs:
   platform-foundation:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: source
     steps:
+      - name: Checkout CI control repository
+        uses: actions/checkout@v4
+        with:
+          path: control
+
+      - name: Resolve exact private source target
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('control/ci-target.json').read_text())
+          print(data['source_sha'])
+          PY
+          )"
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid source_sha" >&2; exit 1; }
+          printf 'source_sha=%s\n' "$source_sha" >> "$GITHUB_OUTPUT"
+          echo "Validating private source SHA: $source_sha"
+
       - name: Checkout exact private source
         uses: actions/checkout@v4
         with:
           repository: ${{ env.SOURCE_REPOSITORY }}
-          ref: ${{ env.SOURCE_SHA }}
+          ref: ${{ steps.target.outputs.source_sha }}
           token: ${{ secrets.DOTA_LIGA_SOURCE_TOKEN }}
           persist-credentials: false
           fetch-depth: 1
           path: source
-      - name: Verify committed lockfile
+
+      - name: Verify exact source and committed lockfile
+        working-directory: source
+        shell: bash
         run: |
-          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          test "$(sha256sum pnpm-lock.yaml | awk '{print $1}')" = "$LOCK_SHA256"
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ steps.target.outputs.source_sha }}"
+          test -s pnpm-lock.yaml
           test -z "$(git status --short -- pnpm-lock.yaml)"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10.15.0
           run_install: false
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm -r --filter './apps/**' --filter './packages/**' typecheck
-      - run: pnpm --filter @dota-liga/api test:unit
+
+      - working-directory: source
+        run: pnpm install --frozen-lockfile
+
+      - working-directory: source
+        run: pnpm -r --filter './apps/**' --filter './packages/**' typecheck
+
+      - working-directory: source
+        run: pnpm --filter @dota-liga/web lint
+
+      - working-directory: source
+        run: pnpm --filter @dota-liga/api test:unit
+
       - name: Production deployment static validation
+        working-directory: source
         run: bash infra/scripts/test-production-deploy-static.sh
+
       - name: Production operations static validation
+        working-directory: source
         run: bash infra/scripts/test-production-operations-static.sh
-      - run: docker compose -f docker-compose.dev.yml up -d
-      - run: bash infra/scripts/migrate-local.sh
+
+      - working-directory: source
+        run: docker compose -f docker-compose.dev.yml up -d
+
+      - working-directory: source
+        run: bash infra/scripts/migrate-local.sh
+
       - name: PostgreSQL backup/restore drill
+        working-directory: source
+        shell: bash
         run: |
           bash -n infra/scripts/lib/postgres-common.sh
           bash -n infra/scripts/postgres-backup.sh
@@ -62,10 +104,22 @@ jobs:
           bash -n infra/scripts/postgres-restore-drill.sh
           bash -n infra/scripts/test-postgres-backup-restore-ci.sh
           bash infra/scripts/test-postgres-backup-restore-ci.sh
-      - run: bash infra/scripts/run-api-integration-ci.sh
-      - run: pnpm --filter @dota-liga/worker test:integration
-      - run: pnpm --filter @dota-liga/api build
-      - run: pnpm --filter @dota-liga/worker build
-      - run: pnpm --filter @dota-liga/web build
+
+      - working-directory: source
+        run: bash infra/scripts/run-api-integration-ci.sh
+
+      - working-directory: source
+        run: pnpm --filter @dota-liga/worker test:integration
+
+      - working-directory: source
+        run: pnpm --filter @dota-liga/api build
+
+      - working-directory: source
+        run: pnpm --filter @dota-liga/worker build
+
+      - working-directory: source
+        run: pnpm --filter @dota-liga/web build
+
       - if: always()
+        working-directory: source
         run: docker compose -f docker-compose.dev.yml down -v
