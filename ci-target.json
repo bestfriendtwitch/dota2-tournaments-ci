@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "ae6439507f509a57782c6d605bb7cb0e102664e7",
-  "requested_at": "2026-08-15T21:19:35Z",
-  "purpose": "pr-108-fixture-window-time-constraint"
+  "source_sha": "5bfb01b82702c06b301700e0980ec191d060c420",
+  "requested_at": "2026-08-15T22:46:00Z",
+  "purpose": "qa-staging-playwright-bootstrap"
 }
