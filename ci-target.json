@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "cd0b46e64dd58ba6c4c0991e623bb54ae54451cc",
-  "requested_at": "2026-08-15T20:47:10Z",
-  "purpose": "pr-106-fixture-checkin-repair-v3-corrected"
+  "source_sha": "8f42f33bf1308e3b89b5ffaa064805aee7c16678",
+  "requested_at": "2026-08-15T21:04:20Z",
+  "purpose": "pr-107-checkin-to-draft-transition"
 }
