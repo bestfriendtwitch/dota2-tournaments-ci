@@ -182,14 +182,14 @@ jobs:
           ) > "$RUN_DIR/evidence/compose-ps.txt" 2>&1 || true
           (
             cd "$GITHUB_WORKSPACE/source"
-            docker compose -f docker-compose.qa.yml logs --no-color --tail=3000 api
+            docker compose -f docker-compose.qa.yml logs --no-color api
           ) > "$RUN_DIR/evidence/api.log" 2>&1 || true
           docker system df > "$RUN_DIR/evidence/docker-system-df.txt" 2>&1 || true
           df -h > "$RUN_DIR/evidence/disk.txt" 2>&1 || true
           if [[ "${{ steps.playwright.outputs.exit_code }}" != "0" ]]; then
             (
               cd "$GITHUB_WORKSPACE/source"
-              docker compose -f docker-compose.qa.yml logs --no-color --tail=2500
+              docker compose -f docker-compose.qa.yml logs --no-color --tail=20000
             ) > "$RUN_DIR/evidence/compose-failure.log" 2>&1 || true
           fi
           printf '{"request_id":"%s","source_sha":"%s","suite":"%s","playwright_exit_code":"%s","runtime_patch":"diagnostics-v1"}\n' \
