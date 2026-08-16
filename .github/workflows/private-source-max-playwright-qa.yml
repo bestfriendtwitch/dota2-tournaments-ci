@@ -1,0 +1,222 @@
+name: Private source max Playwright QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'qa-max-target.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-source-max-playwright-qa
+  cancel-in-progress: false
+
+env:
+  SOURCE_REPOSITORY: bestfriendtwitch/dota2-tournaments
+  QA_ORIGIN: http://127.0.0.1:3380
+
+jobs:
+  max-playwright-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout CI control repository
+        uses: actions/checkout@v4
+        with:
+          path: control
+
+      - name: Resolve exact private source QA target
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, re
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          data = json.loads(Path('control/qa-max-target.json').read_text())
+          if data.get('version') != 1:
+              raise SystemExit('unsupported QA target version')
+          if data.get('enabled') is not True:
+              print('enabled=false')
+              raise SystemExit(0)
+
+          request_id = str(data.get('request_id', ''))
+          source_sha = str(data.get('source_sha', ''))
+          suite = str(data.get('suite', ''))
+          created_at = str(data.get('created_at', ''))
+
+          if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{7,79}', request_id):
+              raise SystemExit('invalid request_id')
+          if not re.fullmatch(r'[0-9a-f]{40}', source_sha):
+              raise SystemExit('invalid source_sha')
+          if suite != 'max-playwright-v3':
+              raise SystemExit('unsupported suite')
+
+          try:
+              created = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+          except ValueError as exc:
+              raise SystemExit('invalid created_at') from exc
+          age = (datetime.now(timezone.utc) - created.astimezone(timezone.utc)).total_seconds()
+          if age < -120 or age > 1800:
+              raise SystemExit(f'stale QA target: age_seconds={age:.0f}')
+
+          print('enabled=true')
+          print(f'request_id={request_id}')
+          print(f'source_sha={source_sha}')
+          print(f'suite={suite}')
+          PY
+
+      - name: Stop for disabled target
+        if: steps.target.outputs.enabled != 'true'
+        run: echo 'Max Playwright QA target disabled; nothing to do.'
+
+      - name: Checkout exact private source
+        if: steps.target.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE_REPOSITORY }}
+          ref: ${{ steps.target.outputs.source_sha }}
+          token: ${{ secrets.DOTA_LIGA_SOURCE_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+          path: source
+
+      - name: Verify exact source and QA boundary
+        if: steps.target.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE="$GITHUB_WORKSPACE/source"
+          test "$(git -C "$SOURCE" rev-parse HEAD)" = "${{ steps.target.outputs.source_sha }}"
+          test -x "$SOURCE/infra/qa/up.sh"
+          test -x "$SOURCE/infra/qa/down.sh"
+          test -x "$SOURCE/infra/qa/run-max-browser-audit-v3.sh"
+          test -s "$SOURCE/apps/e2e/qa/seed-max-scenario-v3.mjs"
+          test -s "$SOURCE/apps/e2e/qa/max-browser-extra-v3.mjs"
+          test -s "$SOURCE/apps/e2e/qa/max-match-ops-v3.mjs"
+          test -s "$SOURCE/apps/e2e/qa/max-browser-audit-v2.mjs"
+          test -s "$SOURCE/apps/e2e/qa/max-audit-scenarios.json"
+          if grep -Rni --include='*v3*' --include='max-browser-audit-v2.mjs' 'dotaliga\.duckdns\.org' "$SOURCE/apps/e2e/qa" "$SOURCE/infra/qa"; then
+            echo 'Production domain reference found in QA harness.' >&2
+            exit 1
+          fi
+          echo "SOURCE_SHA=${{ steps.target.outputs.source_sha }}"
+          echo 'QA_ORIGIN=http://127.0.0.1:3380'
+          echo 'PRODUCTION_DOMAIN_REFERENCES=NONE'
+
+      - name: Docker and disk preflight
+        if: steps.target.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker version >/dev/null
+          docker compose version
+          df -h "$GITHUB_WORKSPACE"
+          docker system df || true
+
+      - name: Start clean isolated QA application
+        if: steps.target.outputs.enabled == 'true'
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash infra/qa/down.sh >/dev/null 2>&1 || true
+          bash infra/qa/up.sh
+          curl -fsS "$QA_ORIGIN/health/ready"
+          echo
+
+      - name: Run max Playwright QA V3
+        id: playwright
+        if: steps.target.outputs.enabled == 'true'
+        continue-on-error: true
+        working-directory: source
+        shell: bash
+        env:
+          QA_EXPECTED_SHA: ${{ steps.target.outputs.source_sha }}
+        run: |
+          set -uo pipefail
+          RUN_DIR="$GITHUB_WORKSPACE/qa-runs/${{ steps.target.outputs.request_id }}"
+          mkdir -p "$RUN_DIR/reports"
+          set +e
+          QA_REPO="$GITHUB_WORKSPACE/source" \
+          QA_REPORT_ROOT="$RUN_DIR/reports" \
+          timeout 105m bash infra/qa/run-max-browser-audit-v3.sh \
+            2>&1 | tee "$RUN_DIR/workflow-runner.log"
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          echo "PLAYWRIGHT_EXIT_CODE=$code"
+          exit "$code"
+
+      - name: Collect QA evidence
+        if: always() && steps.target.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_DIR="$GITHUB_WORKSPACE/qa-runs/${{ steps.target.outputs.request_id }}"
+          mkdir -p "$RUN_DIR/evidence"
+          cp "$GITHUB_WORKSPACE/source/.qa-state/manifest.json" "$RUN_DIR/evidence/final-manifest.json" 2>/dev/null || true
+          (
+            cd "$GITHUB_WORKSPACE/source"
+            docker compose -f docker-compose.qa.yml ps --all
+          ) > "$RUN_DIR/evidence/compose-ps.txt" 2>&1 || true
+          docker system df > "$RUN_DIR/evidence/docker-system-df.txt" 2>&1 || true
+          df -h > "$RUN_DIR/evidence/disk.txt" 2>&1 || true
+          if [[ "${{ steps.playwright.outputs.exit_code }}" != "0" ]]; then
+            (
+              cd "$GITHUB_WORKSPACE/source"
+              docker compose -f docker-compose.qa.yml logs --no-color --tail=2500
+            ) > "$RUN_DIR/evidence/compose-failure.log" 2>&1 || true
+          fi
+          printf '{"request_id":"%s","source_sha":"%s","suite":"%s","playwright_exit_code":"%s"}\n' \
+            '${{ steps.target.outputs.request_id }}' \
+            '${{ steps.target.outputs.source_sha }}' \
+            '${{ steps.target.outputs.suite }}' \
+            '${{ steps.playwright.outputs.exit_code }}' \
+            > "$RUN_DIR/run.json"
+
+      - name: Print aggregate report
+        if: always() && steps.target.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          RUN_DIR="$GITHUB_WORKSPACE/qa-runs/${{ steps.target.outputs.request_id }}"
+          echo '========== MAX PLAYWRIGHT FINAL REPORT =========='
+          if [[ -s "$RUN_DIR/reports/aggregate-report.md" ]]; then
+            cat "$RUN_DIR/reports/aggregate-report.md"
+          else
+            echo 'aggregate-report.md was not produced'
+          fi
+          echo '========== END MAX PLAYWRIGHT FINAL REPORT =========='
+
+      - name: Upload QA evidence
+        if: always() && steps.target.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: max-playwright-${{ steps.target.outputs.request_id }}
+          path: qa-runs/${{ steps.target.outputs.request_id }}/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 6
+
+      - name: Destroy isolated QA application
+        if: always() && steps.target.outputs.enabled == 'true'
+        working-directory: source
+        shell: bash
+        run: |
+          set +e
+          bash infra/qa/down.sh
+          docker image prune -f >/dev/null 2>&1 || true
+          exit 0
+
+      - name: Fail if max Playwright QA failed
+        if: always() && steps.target.outputs.enabled == 'true' && steps.playwright.outputs.exit_code != '0'
+        shell: bash
+        run: |
+          echo "Max Playwright QA failed with exit code ${{ steps.playwright.outputs.exit_code }}" >&2
+          exit 1
