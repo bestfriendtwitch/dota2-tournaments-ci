@@ -102,6 +102,7 @@ jobs:
           test -s "$SOURCE/apps/e2e/qa/max-match-ops-v3.mjs"
           test -s "$SOURCE/apps/e2e/qa/max-browser-audit-v2.mjs"
           test -s "$SOURCE/apps/e2e/qa/max-audit-scenarios.json"
+          test -s "$GITHUB_WORKSPACE/control/qa-runtime-patch.py"
           if grep -Rni --include='*v3*' --include='max-browser-audit-v2.mjs' 'dotaliga\.duckdns\.org' "$SOURCE/apps/e2e/qa" "$SOURCE/infra/qa"; then
             echo 'Production domain reference found in QA harness.' >&2
             exit 1
@@ -109,6 +110,16 @@ jobs:
           echo "SOURCE_SHA=${{ steps.target.outputs.source_sha }}"
           echo 'QA_ORIGIN=http://127.0.0.1:3380'
           echo 'PRODUCTION_DOMAIN_REFERENCES=NONE'
+
+      - name: Apply QA-only runtime diagnostics
+        if: steps.target.outputs.enabled == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "$GITHUB_WORKSPACE/control/qa-runtime-patch.py"
+          test "$(git -C "$GITHUB_WORKSPACE/source" rev-parse HEAD)" = "${{ steps.target.outputs.source_sha }}"
+          echo 'SOURCE_COMMIT_UNCHANGED=YES'
+          echo 'QA_RUNTIME_PATCH_SET=diagnostics-v1'
 
       - name: Docker and disk preflight
         if: steps.target.outputs.enabled == 'true'
@@ -181,7 +192,7 @@ jobs:
               docker compose -f docker-compose.qa.yml logs --no-color --tail=2500
             ) > "$RUN_DIR/evidence/compose-failure.log" 2>&1 || true
           fi
-          printf '{"request_id":"%s","source_sha":"%s","suite":"%s","playwright_exit_code":"%s"}\n' \
+          printf '{"request_id":"%s","source_sha":"%s","suite":"%s","playwright_exit_code":"%s","runtime_patch":"diagnostics-v1"}\n' \
             '${{ steps.target.outputs.request_id }}' \
             '${{ steps.target.outputs.source_sha }}' \
             '${{ steps.target.outputs.suite }}' \
