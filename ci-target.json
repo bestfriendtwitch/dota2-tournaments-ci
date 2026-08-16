@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "5044ad034989e6201ee8e57ee4515cca5c71068a",
-  "requested_at": "2026-08-16T12:46:00Z",
-  "purpose": "user-reported-regressions-v1"
+  "source_sha": "24b2f81d4d12f862a5202f3628c1ea3755c0118e",
+  "requested_at": "2026-08-16T12:50:00Z",
+  "purpose": "user-reported-regressions-v1-auto-timer"
 }
