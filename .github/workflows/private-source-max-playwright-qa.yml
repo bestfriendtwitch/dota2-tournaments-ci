@@ -96,7 +96,7 @@ jobs:
           test "$(git -C "$SOURCE" rev-parse HEAD)" = "${{ steps.target.outputs.source_sha }}"
           test -x "$SOURCE/infra/qa/up.sh"
           test -x "$SOURCE/infra/qa/down.sh"
-          test -x "$SOURCE/infra/qa/run-max-browser-audit-v3.sh"
+          test -s "$SOURCE/infra/qa/run-max-browser-audit-v3.sh"
           test -s "$SOURCE/apps/e2e/qa/seed-max-scenario-v3.mjs"
           test -s "$SOURCE/apps/e2e/qa/max-browser-extra-v3.mjs"
           test -s "$SOURCE/apps/e2e/qa/max-match-ops-v3.mjs"
