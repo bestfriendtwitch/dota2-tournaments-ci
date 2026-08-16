@@ -169,6 +169,10 @@ jobs:
             cd "$GITHUB_WORKSPACE/source"
             docker compose -f docker-compose.qa.yml ps --all
           ) > "$RUN_DIR/evidence/compose-ps.txt" 2>&1 || true
+          (
+            cd "$GITHUB_WORKSPACE/source"
+            docker compose -f docker-compose.qa.yml logs --no-color --tail=3000 api
+          ) > "$RUN_DIR/evidence/api.log" 2>&1 || true
           docker system df > "$RUN_DIR/evidence/docker-system-df.txt" 2>&1 || true
           df -h > "$RUN_DIR/evidence/disk.txt" 2>&1 || true
           if [[ "${{ steps.playwright.outputs.exit_code }}" != "0" ]]; then
