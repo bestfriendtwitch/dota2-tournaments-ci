@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "08e79790b721df5b71d450e5181b784da10654c6",
-  "requested_at": "2026-08-16T17:40:00Z",
-  "purpose": "qa-pr110-snake-core-integration-fix"
+  "source_sha": "a4a40b06fc1f0805acd835c1f8863ba71d368d39",
+  "requested_at": "2026-08-16T18:34:00Z",
+  "purpose": "qa-pr110-final-head-after-snake-e2e-alignment"
 }
