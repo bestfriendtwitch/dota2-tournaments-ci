@@ -83,7 +83,7 @@ jobs:
       - working-directory: source
         run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
 
-      - name: Run full Chromium suite to first failure
+      - name: Run full Chromium suite
         working-directory: source
         shell: bash
         env:
@@ -121,7 +121,7 @@ jobs:
             sleep 1
           done
           if [ "$api_ready" -ne 1 ] || [ "$web_ready" -ne 1 ]; then exit 1; fi
-          CI= pnpm --filter @dota-liga/e2e exec playwright test --project=chromium --workers=1 --retries=0 --max-failures=1 --reporter=line 2>&1 | tee ../target-playwright.log
+          CI= pnpm --filter @dota-liga/e2e exec playwright test --project=chromium --workers=1 --retries=0 --reporter=line 2>&1 | tee ../target-playwright.log
           rc=${PIPESTATUS[0]}
           if [ "$rc" -ne 0 ]; then
             echo '=== PLAYWRIGHT ==='; tail -n 1800 ../target-playwright.log
@@ -133,7 +133,7 @@ jobs:
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: full-browser-first-failure-${{ steps.target.outputs.source_sha }}
+          name: full-browser-failures-${{ steps.target.outputs.source_sha }}
           path: |
             source/apps/e2e/playwright-report
             source/apps/e2e/test-results
