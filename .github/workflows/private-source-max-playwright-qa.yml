@@ -144,6 +144,9 @@ jobs:
           RUN_DIR="$GITHUB_WORKSPACE/qa-runs/${{ steps.target.outputs.request_id }}"
           mkdir -p "$RUN_DIR/reports"
           set +e
+          QA_HOST_UID="$(id -u)" \
+          QA_HOST_GID="$(id -g)" \
+          QA_IMAGE_TAG="${{ steps.target.outputs.source_sha }}" \
           QA_REPO="$GITHUB_WORKSPACE/source" \
           QA_REPORT_ROOT="$RUN_DIR/reports" \
           timeout 105m bash infra/qa/run-max-browser-audit-v3.sh \
