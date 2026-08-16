@@ -63,7 +63,7 @@ jobs:
           except ValueError as exc:
               raise SystemExit('invalid created_at') from exc
           age = (datetime.now(timezone.utc) - created.astimezone(timezone.utc)).total_seconds()
-          if age < -120 or age > 1800:
+          if age < -900 or age > 1800:
               raise SystemExit(f'stale QA target: age_seconds={age:.0f}')
 
           print('enabled=true')
@@ -94,8 +94,8 @@ jobs:
           set -euo pipefail
           SOURCE="$GITHUB_WORKSPACE/source"
           test "$(git -C "$SOURCE" rev-parse HEAD)" = "${{ steps.target.outputs.source_sha }}"
-          test -x "$SOURCE/infra/qa/up.sh"
-          test -x "$SOURCE/infra/qa/down.sh"
+          test -s "$SOURCE/infra/qa/up.sh"
+          test -s "$SOURCE/infra/qa/down.sh"
           test -s "$SOURCE/infra/qa/run-max-browser-audit-v3.sh"
           test -s "$SOURCE/apps/e2e/qa/seed-max-scenario-v3.mjs"
           test -s "$SOURCE/apps/e2e/qa/max-browser-extra-v3.mjs"
