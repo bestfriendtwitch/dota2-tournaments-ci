@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "51da2f468e6bd72e8e528edc615873194df01bc2",
-  "requested_at": "2026-08-16T17:35:00Z",
-  "purpose": "qa-user-reported-regressions-v1-pr110-current-head"
+  "source_sha": "08e79790b721df5b71d450e5181b784da10654c6",
+  "requested_at": "2026-08-16T17:40:00Z",
+  "purpose": "qa-pr110-snake-core-integration-fix"
 }
