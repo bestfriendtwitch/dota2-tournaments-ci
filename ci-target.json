@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "63ce4f657cafc2652516106d21550c6807d49c6a",
-  "requested_at": "2026-08-16T13:06:00Z",
-  "purpose": "user-reported-regressions-v1-latest"
+  "source_sha": "c8f0fd680ec7ae9d98ec43bbe7aaf1f59262ffcf",
+  "requested_at": "2026-08-16T15:29:30Z",
+  "purpose": "qa-user-reported-regressions-v1-pr110-head"
 }
