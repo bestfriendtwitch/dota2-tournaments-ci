@@ -91,6 +91,110 @@ must_replace(
 ''',
 )
 
+# Check-in controls are dynamic. Pick an actual visible/enabled override card instead of assuming the first card can be changed.
+must_replace(
+    "apps/e2e/qa/max-browser-extra-v3.mjs",
+    '''  const firstCard = owner.locator(".staff-registration").first();
+  const undoCheckin = firstCard.getByRole("button", { name: /ОТМЕНИТЬ CHECK-IN/i }).first();
+  if (await undoCheckin.isVisible().catch(() => false)) {
+    await clickDialogs(owner, undoCheckin, ["QA override off"]);
+    await owner.waitForTimeout(350);
+    readyCount = await owner.locator(".checkin-ready").count();
+    check(readyCount === manifest.participantCount - 1, "organizer can remove one check-in", { readyCount }, "High", "owner", "Check-in override");
+    const restoreCheckin = owner.locator(".staff-registration").first().getByRole("button", { name: /ПОДТВЕРДИТЬ CHECK-IN/i }).first();
+    if (await restoreCheckin.isVisible().catch(() => false)) await clickDialogs(owner, restoreCheckin, ["QA override restore"]);
+    await owner.waitForTimeout(350);
+    readyCount = await owner.locator(".checkin-ready").count();
+    check(readyCount === manifest.participantCount, "organizer check-in override restores state", { readyCount }, "High", "owner", "Check-in override");
+  } else {
+    defect("Medium", "owner", "Check-in override", "Organizer check-in undo control was not visible", {});
+  }
+''',
+    '''  const undoButtons = owner.getByRole("button", { name: /ОТМЕНИТЬ CHECK-IN/i });
+  let undoCheckin = null;
+  for (let index = 0; index < await undoButtons.count(); index += 1) {
+    const candidate = undoButtons.nth(index);
+    if (await candidate.isVisible().catch(() => false) && await candidate.isEnabled().catch(() => false)) {
+      undoCheckin = candidate;
+      break;
+    }
+  }
+  if (undoCheckin) {
+    const overrideCard = undoCheckin.locator("xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' staff-registration ')][1]");
+    await clickDialogs(owner, undoCheckin, ["QA override off"]);
+    await owner.waitForTimeout(500);
+    readyCount = await owner.locator(".checkin-ready").count();
+    check(readyCount === manifest.participantCount - 1, "organizer can remove one check-in", { readyCount }, "High", "owner", "Check-in override");
+    const restoreCheckin = overrideCard.getByRole("button", { name: /ПОДТВЕРДИТЬ CHECK-IN/i }).first();
+    if (await restoreCheckin.isVisible().catch(() => false) && await restoreCheckin.isEnabled().catch(() => false)) {
+      await clickDialogs(owner, restoreCheckin, ["QA override restore"]);
+    }
+    await owner.waitForTimeout(500);
+    readyCount = await owner.locator(".checkin-ready").count();
+    check(readyCount === manifest.participantCount, "organizer check-in override restores state", { readyCount }, "High", "owner", "Check-in override");
+  } else {
+    check(false, "organizer check-in undo control is available on a checked-in participant", {}, "Medium", "owner", "Check-in override");
+  }
+''',
+)
+
+# Twitch opt-in is intentionally gated when the linked account is not currently eligible.
+# Exercise the toggle when enabled; otherwise assert that the UI explains the eligibility gate instead of timing out on a disabled button.
+must_replace(
+    "apps/e2e/qa/max-browser-extra-v3.mjs",
+    '''  const streamKey = (manifest.twitchKeys || []).find((key) => playerKeys.includes(key));
+  if (streamKey) {
+    const streamPage = pages.get(streamKey);
+    await goto(streamPage, "/?view=streams", streamKey);
+    const enable = streamPage.getByRole("button", { name: /^БУДУ СТРИМИТЬ ТУРНИР$/i }).first();
+    if (await enable.isVisible().catch(() => false)) {
+      await enable.click();
+      await streamPage.waitForTimeout(350);
+      check(await streamPage.getByRole("button", { name: /НЕ БУДУ СТРИМИТЬ ТУРНИР/i }).count() > 0, "Twitch-linked participant can opt in to tournament streaming", {}, "High", streamKey, "Streams");
+      const disable = streamPage.getByRole("button", { name: /НЕ БУДУ СТРИМИТЬ ТУРНИР/i }).first();
+      if (await disable.isVisible().catch(() => false)) { await disable.click(); await streamPage.waitForTimeout(300); }
+      check(await streamPage.getByRole("button", { name: /^БУДУ СТРИМИТЬ ТУРНИР$/i }).count() > 0, "stream opt-in can be disabled again", {}, "Medium", streamKey, "Streams");
+    } else {
+      defect("High", streamKey, "Streams", "Synthetic Twitch-linked participant has no stream opt-in control", { text: clip(await body(streamPage)) });
+    }
+  } else {
+    defect("Medium", "runner", "Streams", "No Twitch-enabled synthetic user in manifest", {});
+  }
+''',
+    '''  const streamKeys = (manifest.twitchKeys || []).filter((key) => playerKeys.includes(key));
+  if (streamKeys.length > 0) {
+    let streamToggleExercised = false;
+    let guardedStreamerSeen = false;
+    for (const streamKey of streamKeys) {
+      const streamPage = pages.get(streamKey);
+      await goto(streamPage, "/?view=streams", streamKey);
+      const enable = streamPage.getByRole("button", { name: /^БУДУ СТРИМИТЬ ТУРНИР$/i }).first();
+      if (!(await enable.isVisible().catch(() => false))) continue;
+      if (!(await enable.isEnabled().catch(() => false))) {
+        const note = await streamPage.locator(".inline-note").first().textContent().catch(() => "");
+        check(Boolean(note?.trim()), "ineligible Twitch-linked participant sees an explanation for disabled stream opt-in", { note: clip(note || "") }, "Medium", streamKey, "Streams eligibility");
+        guardedStreamerSeen = true;
+        continue;
+      }
+      await enable.click();
+      await streamPage.waitForTimeout(500);
+      check(await streamPage.getByRole("button", { name: /НЕ БУДУ СТРИМИТЬ ТУРНИР/i }).count() > 0, "Twitch-linked participant can opt in to tournament streaming", {}, "High", streamKey, "Streams");
+      const disable = streamPage.getByRole("button", { name: /НЕ БУДУ СТРИМИТЬ ТУРНИР/i }).first();
+      if (await disable.isVisible().catch(() => false) && await disable.isEnabled().catch(() => false)) {
+        await disable.click();
+        await streamPage.waitForTimeout(400);
+      }
+      check(await streamPage.getByRole("button", { name: /^БУДУ СТРИМИТЬ ТУРНИР$/i }).count() > 0, "stream opt-in can be disabled again", {}, "Medium", streamKey, "Streams");
+      streamToggleExercised = true;
+      break;
+    }
+    check(streamToggleExercised || guardedStreamerSeen, "Twitch-linked synthetic users expose either an actionable opt-in or an explained eligibility gate", { streamKeys }, "Medium", "runner", "Streams");
+  } else {
+    check(false, "Twitch-enabled synthetic user exists in manifest", {}, "Medium", "runner", "Streams");
+  }
+''',
+)
+
 # Full-flow: diagnose the one-off identity failure with page text.
 must_replace(
     "apps/e2e/qa/max-browser-audit-v2.mjs",
@@ -183,6 +287,59 @@ must_replace(
 ''',
 )
 
+# The bracket QA runner mutates the DOM after each readiness click. Re-query from the beginning so one team is not skipped,
+# then wait for any enabled manual-start control rather than assuming the first locator is the current match.
+must_replace(
+    "infra/qa/run-max-browser-audit-v3.sh",
+    '''    const readyButtons = owner.getByRole("button", { name: /ОТМЕТИТЬ ГОТОВОЙ/i });
+    for (let index = 0; index < await readyButtons.count(); index += 1) {
+      const readyButton = readyButtons.nth(index);
+      if (await readyButton.isVisible().catch(() => false) && await readyButton.isEnabled().catch(() => false)) {
+        await readyButton.click();
+        await owner.waitForTimeout(160);
+      }
+    }
+    const manualStart = owner.getByRole("button", { name: /^ЗАПУСТИТЬ МАТЧ$/i }).first();
+    if (await manualStart.isVisible().catch(() => false) && await manualStart.isEnabled().catch(() => false)) {
+      owner.once("dialog", (dialog) => dialog.accept());
+      await manualStart.click();
+      await owner.waitForTimeout(450);
+    }
+''',
+    '''    for (let readyStep = 0; readyStep < 16; readyStep += 1) {
+      const readyButtons = owner.getByRole("button", { name: /ОТМЕТИТЬ ГОТОВОЙ/i });
+      let clickedReady = false;
+      const readyCount = await readyButtons.count();
+      for (let index = 0; index < readyCount; index += 1) {
+        const readyButton = readyButtons.nth(index);
+        if (await readyButton.isVisible().catch(() => false) && await readyButton.isEnabled().catch(() => false)) {
+          await readyButton.click();
+          await owner.waitForTimeout(220);
+          clickedReady = true;
+          break;
+        }
+      }
+      if (!clickedReady) break;
+    }
+    let startedMatch = false;
+    for (let startWait = 0; startWait < 15 && !startedMatch; startWait += 1) {
+      const startButtons = owner.getByRole("button", { name: /^ЗАПУСТИТЬ МАТЧ$/i });
+      const startCount = await startButtons.count();
+      for (let index = 0; index < startCount; index += 1) {
+        const manualStart = startButtons.nth(index);
+        if (await manualStart.isVisible().catch(() => false) && await manualStart.isEnabled().catch(() => false)) {
+          owner.once("dialog", (dialog) => dialog.accept());
+          await manualStart.click();
+          await owner.waitForTimeout(600);
+          startedMatch = true;
+          break;
+        }
+      }
+      if (!startedMatch) await owner.waitForTimeout(200);
+    }
+''',
+)
+
 # Lobby discovery is asynchronous because captains probe only their eligible active matches.
 must_replace(
     "apps/e2e/qa/max-match-ops-v3.mjs",
@@ -195,4 +352,4 @@ must_replace(
 ''',
 )
 
-print("QA_RUNTIME_PATCH_SET=diagnostics-v1")
+print("QA_RUNTIME_PATCH_SET=diagnostics-v2")
