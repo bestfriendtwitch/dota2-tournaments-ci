@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "33a49061f5056d9772e0dac06292aed047f11ebb",
-  "requested_at": "2026-08-17T21:28:00Z",
-  "purpose": "validate-pr116-adaptive-harness-fix"
+  "source_sha": "b7eb986ae43a24d9fada81713092d0657ff4512c",
+  "requested_at": "2026-08-17T22:15:00Z",
+  "purpose": "validate-pr116-profile-deeplink-fix"
 }
