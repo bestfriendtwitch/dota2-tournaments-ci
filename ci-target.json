@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "63516f34b2442bf2d38b77bf63353acfa1755647",
-  "requested_at": "2026-08-17T08:05:08Z",
-  "purpose": "qa-pr110-stream-opt-in-reregistration-fix"
+  "source_sha": "251dd9c06192c045d013adf41694eba304f6a6eb",
+  "requested_at": "2026-08-17T08:10:16Z",
+  "purpose": "qa-pr110-stream-opt-in-reregistration-fix-v2"
 }
