@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "7c38e36c7ca9cc85b9462e3d17071b00dc6b6ed2",
-  "requested_at": "2026-08-17T20:47:00Z",
-  "purpose": "validate-pr116-worker-draft-timer-fixture"
+  "source_sha": "33a49061f5056d9772e0dac06292aed047f11ebb",
+  "requested_at": "2026-08-17T21:28:00Z",
+  "purpose": "validate-pr116-adaptive-harness-fix"
 }
