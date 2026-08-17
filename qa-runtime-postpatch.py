@@ -74,4 +74,17 @@ must_replace(
 ''',
 )
 
-print("QA_RUNTIME_POSTPATCH_SET=final-flow-v1")
+# Product requirement changed from snake boundaries to strict repeated captain order.
+# Keep Max QA on the existing v3 workflow but patch its order assertion at runtime.
+must_replace(
+    "infra/qa/run-max-browser-audit-v3.sh",
+    '''const expectedKey = roundNo % 2 === 1 ? captains[position] : captains[captains.length - 1 - position];''',
+    '''const expectedKey = captains[position];''',
+)
+must_replace(
+    "infra/qa/run-max-browser-audit-v3.sh",
+    '''snake captain order''',
+    '''strict round-robin captain order''',
+)
+
+print("QA_RUNTIME_POSTPATCH_SET=final-flow-v1+strict-round-robin")
