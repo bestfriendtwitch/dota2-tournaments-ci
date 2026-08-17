@@ -1,0 +1,122 @@
+name: Report private source CI result
+
+on:
+  workflow_run:
+    workflows:
+      - Private source platform CI
+      - Private source browser CI
+      - Private source max Playwright QA
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  record-result:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout control repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve exact source SHA and result path
+        id: result
+        env:
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$WORKFLOW_NAME" in
+            "Private source platform CI")
+              target_file="ci-target.json"
+              result_file="ci-results/platform.json"
+              ;;
+            "Private source browser CI")
+              target_file="ci-target.json"
+              result_file="ci-results/browser.json"
+              ;;
+            "Private source max Playwright QA")
+              target_file="qa-max-target.json"
+              result_file="ci-results/max-playwright.json"
+              ;;
+            *)
+              echo "Unsupported workflow: $WORKFLOW_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          git show "$RUN_HEAD_SHA:$target_file" > /tmp/target.json
+          source_sha="$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          print(json.loads(Path('/tmp/target.json').read_text())['source_sha'])
+          PY
+          )"
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid source_sha" >&2; exit 1; }
+          printf 'source_sha=%s\n' "$source_sha" >> "$GITHUB_OUTPUT"
+          printf 'result_file=%s\n' "$result_file" >> "$GITHUB_OUTPUT"
+
+      - name: Write machine-readable result
+        env:
+          RESULT_FILE: ${{ steps.result.outputs.result_file }}
+          SOURCE_SHA: ${{ steps.result.outputs.source_sha }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          COMPLETED_AT: ${{ github.event.workflow_run.updated_at }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$RESULT_FILE")"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = {
+              "version": 1,
+              "workflow": os.environ["WORKFLOW_NAME"],
+              "source_sha": os.environ["SOURCE_SHA"],
+              "conclusion": os.environ["CONCLUSION"],
+              "run_id": int(os.environ["RUN_ID"]),
+              "run_number": int(os.environ["RUN_NUMBER"]),
+              "run_url": os.environ["RUN_URL"],
+              "mirror_head_sha": os.environ["RUN_HEAD_SHA"],
+              "completed_at": os.environ["COMPLETED_AT"],
+          }
+          path = Path(os.environ["RESULT_FILE"])
+          path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+          PY
+
+      - name: Commit result with push retry
+        env:
+          RESULT_FILE: ${{ steps.result.outputs.result_file }}
+          SOURCE_SHA: ${{ steps.result.outputs.source_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$RESULT_FILE"
+          if git diff --cached --quiet; then
+            echo "Result already recorded"
+            exit 0
+          fi
+          git commit -m "ci: record ${RESULT_FILE##*/} for ${SOURCE_SHA:0:12}"
+
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push race, retry $attempt/5"
+            sleep $((attempt * 2))
+          done
+          echo "Unable to publish CI result after retries" >&2
+          exit 1
