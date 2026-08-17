@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "a7fdb2e3857898e4892544c70915b2007942cc01",
-  "requested_at": "2026-08-17T22:20:00Z",
-  "purpose": "validate-pr116-adaptive-deeplinks"
+  "source_sha": "96588760b7108240f788f3b1c843add443308cf4",
+  "requested_at": "2026-08-17T22:25:00Z",
+  "purpose": "validate-pr116-prompt-free-match-results"
 }
