@@ -87,4 +87,71 @@ must_replace(
     '''strict round-robin captain order''',
 )
 
-print("QA_RUNTIME_POSTPATCH_SET=final-flow-v1+strict-round-robin")
+# Issue #113 removed the separate user-facing rules page. Creation still validates the
+# tournament name, while registration now happens directly from the stage-driven home workspace.
+for obsolete in (
+    '  await owner.getByLabel(/Правила турнира/i).fill("");\n',
+    '  check(await owner.getByLabel(/Правила турнира/i).evaluate((el) => !el.validity.valid), "browser validation rejects empty rules", {}, "Medium", "owner", "Creation validation");\n',
+    '  await owner.getByLabel(/Правила турнира/i).fill("QA browser rules v3. Registration, approval and check-in are tested through the real UI.");\n',
+):
+    must_replace("apps/e2e/qa/max-browser-extra-v3.mjs", obsolete, "")
+
+must_replace(
+    "apps/e2e/qa/max-browser-extra-v3.mjs",
+    'await goto(page, "/?view=rules", key);',
+    'await goto(page, "/", key);',
+)
+must_replace(
+    "apps/e2e/qa/max-browser-extra-v3.mjs",
+    'await goto(first, "/?view=rules", firstKey);',
+    'await goto(first, "/", firstKey);',
+)
+must_replace(
+    "apps/e2e/qa/max-browser-extra-v3.mjs",
+    'getByRole("button", { name: /ПРИНИМАЮ ПРАВИЛА И РЕГИСТРИРУЮСЬ/i })',
+    'getByRole("button", { name: /ЗАРЕГИСТРИРОВАТЬСЯ/i })',
+    count=2,
+)
+
+# Replacement history is hydrated asynchronously after returning from the organizer decision.
+# Wait for the accepted state instead of sampling the first post-navigation render.
+must_replace(
+    "apps/e2e/qa/max-match-ops-v3.mjs",
+    '''  await goto(requesterPage, "/?view=bracket", requesterKey);
+  const requesterText = await body(requesterPage);''',
+    '''  await goto(requesterPage, "/?view=bracket", requesterKey);
+  await requesterPage.waitForFunction(() => /ПРИНЯТА|принята|ACCEPTED/i.test(document.body?.innerText || ""), undefined, { timeout: 5_000 }).catch(() => undefined);
+  const requesterText = await body(requesterPage);''',
+)
+
+# During an active draft the new home screen embeds DraftClient directly; there is intentionally
+# no legacy hero CTA to /draft. Preserve the regression intent by asserting the embedded live
+# workspace, its turn clock, and that the interaction remains on the home stage.
+must_replace(
+    "apps/e2e/qa/user-reported-regression-v1.mjs",
+    '''async function homeDraftCtaCheck() {
+  const page = pages.get("player01");
+  await goto(page, "/", "player01");
+  const button = page.locator(".hero-cta button.primary").first();
+  const label = (await button.innerText().catch(() => "")).trim();
+  check(/ДРАФТ/i.test(label) && !/ПОДГОТОВКА ДРАФТА/i.test(label), "home primary CTA is an action that opens the draft", { label }, "High", "player01", "Home CTA");
+  if (await button.isVisible().catch(() => false)) {
+    await button.click();
+    await page.waitForURL((url) => url.pathname === "/draft", { timeout: 8_000 }).catch(() => undefined);
+    check(new URL(page.url()).pathname === "/draft", "home draft CTA navigates to /draft instead of showing unavailable-action toast", { url: page.url() }, "Critical", "player01", "Home CTA");
+  }
+}''',
+    '''async function homeDraftCtaCheck() {
+  const page = pages.get("player01");
+  await goto(page, "/", "player01");
+  const embeddedDraft = page.locator(".adaptive-stage-embedded .draft-page").first();
+  await embeddedDraft.waitFor({ state: "visible", timeout: 8_000 }).catch(() => undefined);
+  check(await embeddedDraft.isVisible().catch(() => false), "home embeds the active live-draft workspace", { url: page.url() }, "High", "player01", "Home draft workspace");
+  const clock = page.locator(".adaptive-stage-embedded .draft-clock").first();
+  const clockText = (await clock.innerText().catch(() => "")).trim();
+  check(Boolean(clockText) && clockText !== "—:—", "embedded home draft exposes the live turn clock", { clockText }, "Critical", "player01", "Home draft workspace");
+  check(new URL(page.url()).pathname === "/", "active draft stays actionable on the stage-driven home workspace", { url: page.url() }, "Critical", "player01", "Home draft workspace");
+}''',
+)
+
+print("QA_RUNTIME_POSTPATCH_SET=final-flow-v1+strict-round-robin+adaptive-workspace-v1")
