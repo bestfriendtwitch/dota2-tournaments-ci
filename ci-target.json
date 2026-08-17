@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "47e4c44b7e1646e3b57c5ae9508b3c7eced3cc06",
-  "requested_at": "2026-08-16T18:40:00Z",
-  "purpose": "qa-pr110-final-head-after-all-snake-e2e-alignment"
+  "source_sha": "63516f34b2442bf2d38b77bf63353acfa1755647",
+  "requested_at": "2026-08-17T08:05:08Z",
+  "purpose": "qa-pr110-stream-opt-in-reregistration-fix"
 }
