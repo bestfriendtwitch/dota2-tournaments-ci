@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "7d871905610eec724dfa05b36ead5054856489ec",
-  "requested_at": "2026-08-17T16:46:00Z",
-  "purpose": "validate-adaptive-tournament-workspace-pr116-core"
+  "source_sha": "ef0ebd400e9ae950a95387417711653b604d4be0",
+  "requested_at": "2026-08-17T16:53:00Z",
+  "purpose": "validate-adaptive-workspace-pr116-head2"
 }
