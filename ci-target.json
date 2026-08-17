@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "3f4f1e136366083233c12902a20aab93c58428f7",
-  "requested_at": "2026-08-17T20:30:00Z",
-  "purpose": "validate-pr116-current-head-after-draft-deadline-fix"
+  "source_sha": "832213ba4dc93721466b03a335e7b189e4350956",
+  "requested_at": "2026-08-17T20:38:00Z",
+  "purpose": "validate-pr116-draft-correction-fixture-after-live-deadline-guard"
 }
