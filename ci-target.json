@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "251dd9c06192c045d013adf41694eba304f6a6eb",
-  "requested_at": "2026-08-17T08:10:16Z",
-  "purpose": "qa-pr110-stream-opt-in-reregistration-fix-v2"
+  "source_sha": "7d7194e8ea12cb78f51ebf7cf8e04df8e727896b",
+  "requested_at": "2026-08-17T11:42:45Z",
+  "purpose": "validate-production-test-fixture-attachment-0042"
 }
