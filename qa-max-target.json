@@ -1,8 +1,8 @@
 {
   "version": 1,
   "enabled": true,
-  "request_id": "20260817T080508Z-max-playwright-v3-019",
-  "source_sha": "63516f34b2442bf2d38b77bf63353acfa1755647",
+  "request_id": "20260817T081016Z-max-playwright-v3-020",
+  "source_sha": "251dd9c06192c045d013adf41694eba304f6a6eb",
   "suite": "max-playwright-v3",
-  "created_at": "2026-08-17T08:05:08Z"
+  "created_at": "2026-08-17T08:10:16Z"
 }
