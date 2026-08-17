@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "c7b84d4136b3bc2890a70a71abe670ca8eea72ea",
-  "requested_at": "2026-08-17T17:26:00Z",
-  "purpose": "validate-adaptive-workspace-pr116-latest"
+  "source_sha": "0c9e58a0585c2236aadd6b91307f0e5d44c599ef",
+  "requested_at": "2026-08-17T17:33:00Z",
+  "purpose": "validate-adaptive-workspace-pr116-fetchable-head"
 }
