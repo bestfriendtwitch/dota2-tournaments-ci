@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "b7eb986ae43a24d9fada81713092d0657ff4512c",
-  "requested_at": "2026-08-17T22:15:00Z",
-  "purpose": "validate-pr116-profile-deeplink-fix"
+  "source_sha": "a7fdb2e3857898e4892544c70915b2007942cc01",
+  "requested_at": "2026-08-17T22:20:00Z",
+  "purpose": "validate-pr116-adaptive-deeplinks"
 }
