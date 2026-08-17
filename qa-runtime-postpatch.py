@@ -87,6 +87,24 @@ must_replace(
     '''strict round-robin captain order''',
 )
 
+# The adaptive root has a generic loading shell ("Загружаем турнир…") in addition to the
+# legacy page-specific loading phrases. Waiting only for the old phrases produces random
+# identity/control misses when many synthetic browser contexts hydrate concurrently.
+must_replace(
+    "infra/qa/run-max-browser-audit-v3.sh",
+    '''Загружаем (панель организатора|актуальное состояние турнира|live-драфт|турнирную сетку|сетку)''',
+    '''Загружаем (?:турнир|панель организатора|актуальное состояние турнира|live-драфт|турнирную сетку|сетку)''',
+    count=2,
+)
+
+# Check-in moved into the stage task and its action is now named "ПРОЙТИ CHECK-IN".
+# Keep the scenario behavioral: every accepted player must click the real current action.
+must_replace(
+    "apps/e2e/qa/max-browser-extra-v3.mjs",
+    '''const button = page.getByRole("button", { name: /ПОДТВЕРДИТЬ УЧАСТИЕ/i }).first();''',
+    '''const button = page.getByRole("button", { name: /ПРОЙТИ CHECK-IN|ПОДТВЕРДИТЬ УЧАСТИЕ/i }).first();''',
+)
+
 # Issue #113 removed the separate user-facing rules page. Creation still validates the
 # tournament name, while registration now happens directly from the stage-driven home workspace.
 for obsolete in (
@@ -154,4 +172,4 @@ must_replace(
 }''',
 )
 
-print("QA_RUNTIME_POSTPATCH_SET=final-flow-v1+strict-round-robin+adaptive-workspace-v1")
+print("QA_RUNTIME_POSTPATCH_SET=final-flow-v1+strict-round-robin+adaptive-workspace-v2")
