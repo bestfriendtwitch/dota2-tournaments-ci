@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "2e3ae4b105a869448ef8bf0afd6a674cd5b081c0",
-  "requested_at": "2026-08-17T18:27:00Z",
-  "purpose": "validate-adaptive-workspace-pr116-head"
+  "source_sha": "3f4f1e136366083233c12902a20aab93c58428f7",
+  "requested_at": "2026-08-17T20:30:00Z",
+  "purpose": "validate-pr116-current-head-after-draft-deadline-fix"
 }
