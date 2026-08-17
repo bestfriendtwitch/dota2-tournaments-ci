@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "0aeb947e58536062f30c21df2258076287632d97",
-  "requested_at": "2026-08-17T14:32:00Z",
-  "purpose": "validate-checkin-window-reconciliation-0044"
+  "source_sha": "7d871905610eec724dfa05b36ead5054856489ec",
+  "requested_at": "2026-08-17T16:46:00Z",
+  "purpose": "validate-adaptive-tournament-workspace-pr116-core"
 }
