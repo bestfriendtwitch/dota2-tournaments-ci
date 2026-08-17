@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'ci-target.json'
+      - 'browser-runtime-patch.py'
       - '.github/workflows/private-source-browser-ci.yml'
   workflow_dispatch:
 
@@ -58,6 +59,15 @@ jobs:
           test "$(git rev-parse HEAD)" = "${{ steps.target.outputs.source_sha }}"
           test -s pnpm-lock.yaml
           test -z "$(git status --short -- pnpm-lock.yaml)"
+
+      - name: Apply adaptive browser test compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 "$GITHUB_WORKSPACE/control/browser-runtime-patch.py"
+          test "$(git -C "$GITHUB_WORKSPACE/source" rev-parse HEAD)" = "${{ steps.target.outputs.source_sha }}"
+          echo 'SOURCE_COMMIT_UNCHANGED=YES'
+          echo 'BROWSER_RUNTIME_PATCH=adaptive-workspace-v1'
 
       - uses: actions/setup-node@v4
         with:
