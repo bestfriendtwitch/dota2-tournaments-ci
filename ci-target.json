@@ -1,6 +1,6 @@
 {
   "version": 1,
   "source_sha": "91a0e7199bfbc9c95a4e4a2b4ad9a9d31042d5dc",
-  "requested_at": "2026-08-18T18:10:00Z",
-  "purpose": "validate-pr118-browser-harness-unranked-count-v8"
+  "requested_at": "2026-08-18T18:20:00Z",
+  "purpose": "validate-pr118-browser-final-stable-success-v9"
 }
