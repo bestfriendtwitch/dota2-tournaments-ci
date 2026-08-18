@@ -104,6 +104,7 @@ jobs:
           test -s "$SOURCE/apps/e2e/qa/max-audit-scenarios.json"
           test -s "$GITHUB_WORKSPACE/control/qa-runtime-patch.py"
           test -s "$GITHUB_WORKSPACE/control/qa-runtime-postpatch.py"
+          test -s "$GITHUB_WORKSPACE/control/qa-runtime-bracket-stability.py"
           if grep -Rni --include='*v3*' --include='max-browser-audit-v2.mjs' 'dotaliga\.duckdns\.org' "$SOURCE/apps/e2e/qa" "$SOURCE/infra/qa"; then
             echo 'Production domain reference found in QA harness.' >&2
             exit 1
@@ -119,9 +120,10 @@ jobs:
           set -euo pipefail
           python3 "$GITHUB_WORKSPACE/control/qa-runtime-patch.py"
           python3 "$GITHUB_WORKSPACE/control/qa-runtime-postpatch.py"
+          python3 "$GITHUB_WORKSPACE/control/qa-runtime-bracket-stability.py"
           test "$(git -C "$GITHUB_WORKSPACE/source" rev-parse HEAD)" = "${{ steps.target.outputs.source_sha }}"
           echo 'SOURCE_COMMIT_UNCHANGED=YES'
-          echo 'QA_RUNTIME_PATCH_SET=diagnostics-v2+final-flow-v1'
+          echo 'QA_RUNTIME_PATCH_SET=diagnostics-v2+final-flow-v1+async-result-panels-v1'
 
       - name: Docker and disk preflight
         if: steps.target.outputs.enabled == 'true'
@@ -194,7 +196,7 @@ jobs:
               docker compose -f docker-compose.qa.yml logs --no-color --tail=20000
             ) > "$RUN_DIR/evidence/compose-failure.log" 2>&1 || true
           fi
-          printf '{"request_id":"%s","source_sha":"%s","suite":"%s","playwright_exit_code":"%s","runtime_patch":"diagnostics-v2+final-flow-v1"}\n' \
+          printf '{"request_id":"%s","source_sha":"%s","suite":"%s","playwright_exit_code":"%s","runtime_patch":"diagnostics-v2+final-flow-v1+async-result-panels-v1"}\n' \
             '${{ steps.target.outputs.request_id }}' \
             '${{ steps.target.outputs.source_sha }}' \
             '${{ steps.target.outputs.suite }}' \
