@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "01634701e2dd550abf05b08bcd80db55720b404d",
-  "requested_at": "2026-08-18T14:59:45Z",
-  "purpose": "production-gate-merged-pr116-adaptive-workspace"
+  "source_sha": "7ca4372949e136cf8590deb931c346560534eef9",
+  "requested_at": "2026-08-18T16:58:00Z",
+  "purpose": "validate-pr118-workspace-routes-modals-captain-fix"
 }
