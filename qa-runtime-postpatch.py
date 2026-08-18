@@ -61,17 +61,33 @@ must_replace(
 ''',
 )
 
-# Regular rounds are BO1, but the grand final is BO3 in these fixtures. The old harness always
-# submitted 1:0, which is valid in BO1 but rejected before organizer review in the BO3 final.
-# Read BO from the same captain result card and submit the minimum valid winning score.
+# Captain result submission moved from browser prompts to an inline score form. Drive the real
+# fields on the same result card and preserve the BO1/BO3/BO5 minimum-winning-score assertion.
 must_replace(
     "apps/e2e/qa/max-browser-audit-v2.mjs",
     '''    const answers = ["1:0", "", true];
-''',
-    '''    const resultCardText = await submitting.button.locator("xpath=ancestor::article[1]").innerText().catch(() => "");
-    const reportedScore = /BO5/i.test(resultCardText) ? "3:0" : /BO3/i.test(resultCardText) ? "2:0" : "1:0";
-    const answers = [reportedScore, "", true];
-''',
+    const handler = async (dialog) => {
+      const answer = answers.shift();
+      if (dialog.type() === "prompt") await dialog.accept(typeof answer === "string" ? answer : "");
+      else await dialog.accept();
+    };
+    submitting.page.on("dialog", handler);
+    await submitting.button.click();
+    await submitting.page.waitForTimeout(700);
+    submitting.page.off("dialog", handler);''',
+    '''    const resultCard = submitting.button.locator("xpath=ancestor::article[1]");
+    const resultCardText = await resultCard.innerText().catch(() => "");
+    const winsRequired = /BO5/i.test(resultCardText) ? 3 : /BO3/i.test(resultCardText) ? 2 : 1;
+    const scoreInputs = resultCard.locator('input[inputmode="numeric"]');
+    if (await scoreInputs.count() < 2) {
+      recordDefect("High", submitting.key, "Bracket", "Captain result card does not expose two inline score inputs", { text: clip(resultCardText) });
+      break;
+    }
+    await scoreInputs.nth(0).fill(String(winsRequired));
+    await scoreInputs.nth(1).fill("0");
+    await submitting.button.click();
+    await submitting.page.getByText(/Результат отправлен организатору/i).waitFor({ state: "visible", timeout: 5_000 }).catch(() => undefined);
+    await submitting.page.waitForTimeout(350);''',
 )
 
 # Product requirement changed from snake boundaries to strict repeated captain order.
@@ -172,4 +188,4 @@ must_replace(
 }''',
 )
 
-print("QA_RUNTIME_POSTPATCH_SET=final-flow-v1+strict-round-robin+adaptive-workspace-v2")
+print("QA_RUNTIME_POSTPATCH_SET=final-flow-v1+strict-round-robin+adaptive-workspace-v3-inline-result")
