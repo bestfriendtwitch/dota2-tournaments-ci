@@ -127,12 +127,17 @@ if rank_copy_count:
     path.write_text(text.replace("Immortal #${state.leaderboardRank}", "Титан #${state.leaderboardRank}"))
     print(f"BROWSER_RUNTIME_POSTPATCH=OK file=opendota-projection.spec.ts rank-copy replacements={rank_copy_count}")
 
-# The public teams view is now modal. Anchor the assertion to its team heading instead of every
-# nested article that inherits the team name through modal text content.
+# The public teams view is now modal. Anchor assertions to the intended surface instead of matching
+# duplicate text rendered by both the legacy route and the modal compatibility layer.
 must_replace(
     "public-teams.spec.ts",
     'const mixedCard = page.locator("article").filter({ hasText: state.teamName });',
     'const mixedCard = page.getByRole("heading", { name: state.teamName, exact: true }).locator("xpath=ancestor::article[1]");',
+)
+must_replace(
+    "public-teams.spec.ts",
+    'await expect(page.getByText(state.reserveName, { exact: true })).toBeVisible();',
+    'await expect(page.getByRole("main").getByText(state.reserveName, { exact: true })).toBeVisible();',
 )
 
 # The old organizer topbar was removed. Archive remains a dedicated operational fallback route,
@@ -145,4 +150,4 @@ if archive_nav_count:
     path.write_text(text.replace(old_archive_nav, '''    await organizerPage.goto("/organizer/archive");\n'''))
     print(f"BROWSER_RUNTIME_POSTPATCH=OK file=archive-trash-management.spec.ts archive-nav replacements={archive_nav_count}")
 
-print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v7-organizer-drawer-russian-ranks")
+print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v8-organizer-drawer-russian-ranks-modal-scope")
