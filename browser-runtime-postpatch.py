@@ -25,8 +25,8 @@ def regex_replace(relative: str, pattern: str, new: str, count: int = 1) -> None
     print(f"BROWSER_RUNTIME_POSTPATCH_REGEX=OK file={relative}")
 
 
-# A closed check-in window is now represented by an explanatory stage card rather than a
-# deliberately failing action button. Staff override after close remains covered below.
+# A closed participation-confirmation window is represented by an explanatory stage card rather
+# than a deliberately failing action button. Staff override after close remains covered below.
 regex_replace(
     "checkin-operations.spec.ts",
     r'''    const playerCheckInButton = playerPage\.getByRole\("button", \{ name: /PROYTI_SENTINEL/ \}\);'''.replace("PROYTI_SENTINEL", r"ПРОЙТИ CHECK-IN\|ПОДТВЕРДИТЬ УЧАСТИЕ"),
@@ -37,6 +37,17 @@ regex_replace(
     r'''    await expect\(playerCheckInButton\)\.toBeVisible\(\);\n    await playerCheckInButton\.click\(\);\n    await expect\(playerPage\.getByText\("Окно check-in сейчас закрыто", \{ exact: true \}\)\)\.toBeVisible\(\);\n''',
     "",
 )
+
+# The product copy is now fully Russian. The first compatibility pass rewrites legacy checks to
+# the previous adaptive wording, so normalize those generated expectations here.
+for file in ("checkin-operations.spec.ts", "registration-checkin.spec.ts"):
+    path = ROOT / file
+    text = path.read_text()
+    old = "✓ Check-in пройден"
+    actual = text.count(old)
+    if actual:
+        path.write_text(text.replace(old, "✓ Участие подтверждено"))
+        print(f"BROWSER_RUNTIME_POSTPATCH=OK file={file} participation-copy replacements={actual}")
 
 # The adaptive controls supply stable product audit reasons instead of browser-entered E2E text.
 # Each legacy reason appears once in the dialog setup and once in the final audit assertion.
@@ -103,4 +114,4 @@ regex_replace(
     "",
 )
 
-print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v5-checkin-reasons")
+print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v6-russian-participation-copy")
