@@ -90,6 +90,21 @@ jobs:
       - working-directory: source
         run: pnpm --filter @dota-liga/api build
 
+      - name: Stabilize Ubuntu apt mirror for Playwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt
+            echo 'Playwright apt mirror list:'
+            cat /etc/apt/apt-mirrors.txt
+          fi
+          printf '%s\n' \
+            'Acquire::Retries "3";' \
+            'Acquire::http::Timeout "20";' \
+            'Acquire::https::Timeout "20";' \
+            | sudo tee /etc/apt/apt.conf.d/99-dota-liga-ci-network >/dev/null
+
       - working-directory: source
         run: pnpm --filter @dota-liga/e2e exec playwright install --with-deps chromium
 
