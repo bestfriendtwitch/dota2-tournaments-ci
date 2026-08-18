@@ -2,11 +2,11 @@
   "version": 2,
   "workflow": "Private source max Playwright QA",
   "source_sha": "91a0e7199bfbc9c95a4e4a2b4ad9a9d31042d5dc",
-  "status": "queued",
-  "conclusion": null,
+  "status": "completed",
+  "conclusion": "failure",
   "run_id": 32174656683,
   "run_number": 44,
   "run_url": "https://github.com/bestfriendtwitch/dota2-tournaments-ci/actions/runs/32174656683",
   "mirror_head_sha": "cb3768c2b78a205132ae3507799aa256a75b5b59",
-  "updated_at": "2026-08-18T19:05:22Z"
+  "updated_at": "2026-08-18T19:21:31Z"
 }
