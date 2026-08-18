@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "2ff79b8aa78a41e74ecde5d1d0f8a1f31509ca52",
-  "requested_at": "2026-08-18T22:48:00Z",
-  "purpose": "validate-pr119-menu-profile-hotfix-latest"
+  "source_sha": "2a246fd2521dba9af20e869392dce0c8ec99ef80",
+  "requested_at": "2026-08-18T22:50:30Z",
+  "purpose": "validate-pr119-menu-profile-hotfix-final"
 }
