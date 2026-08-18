@@ -1,8 +1,8 @@
 {
   "version": 1,
   "enabled": true,
-  "request_id": "20260818T011000Z-max-playwright-pr116-inline-result",
+  "request_id": "20260818T012000Z-max-playwright-pr116-inline-result-v2",
   "source_sha": "17074103ded8b7c89725767e662013dddc8cede5",
   "suite": "max-playwright-v3",
-  "created_at": "2026-08-18T01:10:00Z"
+  "created_at": "2026-08-18T01:20:00Z"
 }
