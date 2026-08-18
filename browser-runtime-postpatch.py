@@ -39,12 +39,13 @@ regex_replace(
 )
 
 # The adaptive controls supply stable product audit reasons instead of browser-entered E2E text.
+# Each legacy reason appears once in the dialog setup and once in the final audit assertion.
 for old, new in (
     ('"E2E staff confirms check-in"', '"Check-in подтверждён организатором"'),
     ('"E2E staff revokes check-in"', '"Check-in отменён организатором"'),
     ('"E2E staff confirms after close"', '"Check-in подтверждён организатором"'),
 ):
-    must_replace("checkin-operations.spec.ts", old, new)
+    must_replace("checkin-operations.spec.ts", old, new, count=2)
 
 # Copy changed in the restored organizer match controls.
 must_replace(
@@ -102,4 +103,4 @@ regex_replace(
     "",
 )
 
-print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v4-checkin-reasons")
+print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v5-checkin-reasons")
