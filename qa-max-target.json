@@ -1,8 +1,8 @@
 {
   "version": 1,
   "enabled": true,
-  "request_id": "20260818T174300Z-max-playwright-pr118-organizer-foundation-v4",
-  "source_sha": "a89ad84fad7f3b4decc459d15d9c93939a51d537",
+  "request_id": "20260818T174700Z-max-playwright-pr118-organizer-drawer-v5",
+  "source_sha": "efffcbbf8f219fdaf2128b480ee58ee4033f7eac",
   "suite": "max-playwright-v3",
-  "created_at": "2026-08-18T17:43:00Z"
+  "created_at": "2026-08-18T17:47:00Z"
 }
