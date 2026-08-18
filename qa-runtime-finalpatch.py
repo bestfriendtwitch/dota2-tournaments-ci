@@ -70,6 +70,17 @@ replace_exact(
     "organizer-drawer-open-checkin-v2",
 )
 
+# Current participant UI confirms check-in with a stable heading instead of the retired
+# English/Russian mixed marker "CHECK-IN ПРОЙДЕН". Verify that real post-click UI state.
+replace_exact(
+    relative,
+    '''    if (/CHECK-IN ПРОЙДЕН/i.test(await body(page))) checkedIn += 1;''',
+    '''    const confirmedHeading = page.getByRole("heading", { name: /Участие подтверждено/i }).first();
+    await confirmedHeading.waitFor({ state: "visible", timeout: 5_000 }).catch(() => undefined);
+    if (await confirmedHeading.isVisible().catch(() => false)) checkedIn += 1;''',
+    "participant-checkin-confirmed-v1",
+)
+
 replace_exact(
     relative,
     '''  let readyCount = await owner.locator(".checkin-ready").count();''',
@@ -106,4 +117,4 @@ replace_exact(
     "organizer-drawer-close-checkin-v2",
 )
 
-print("QA_RUNTIME_FINALPATCH_SET=replacement-hydration-v1+organizer-drawer-scope-v2")
+print("QA_RUNTIME_FINALPATCH_SET=replacement-hydration-v1+organizer-drawer-scope-v2+participant-checkin-confirmed-v1")
