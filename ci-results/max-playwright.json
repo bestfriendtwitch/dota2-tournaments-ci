@@ -1,12 +1,12 @@
 {
   "version": 2,
   "workflow": "Private source max Playwright QA",
-  "source_sha": "c07fc249155346eeb270d37b28eb56f0950f055b",
-  "status": "completed",
-  "conclusion": "failure",
-  "run_id": 32082223451,
-  "run_number": 28,
-  "run_url": "https://github.com/bestfriendtwitch/dota2-tournaments-ci/actions/runs/32082223451",
-  "mirror_head_sha": "1ce70897221de27dc653a14d6e86a6c2a34cbfa0",
-  "updated_at": "2026-08-18T00:15:29Z"
+  "source_sha": "17074103ded8b7c89725767e662013dddc8cede5",
+  "status": "queued",
+  "conclusion": null,
+  "run_id": 32087222800,
+  "run_number": 29,
+  "run_url": "https://github.com/bestfriendtwitch/dota2-tournaments-ci/actions/runs/32087222800",
+  "mirror_head_sha": "668e941929b9578b21f0b19d6e2ae972b343f0b1",
+  "updated_at": "2026-08-18T01:09:54Z"
 }
