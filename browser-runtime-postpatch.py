@@ -114,18 +114,30 @@ regex_replace(
     "",
 )
 
-# Rank names/classes changed with the Russian adaptive participant UI.
+# Rank names/classes and friend-code copy changed with the Russian adaptive participant UI.
 must_replace(
     "opendota-projection.spec.ts",
     'participantRow.locator(".rank-medal.rank-tier-8")',
     'participantRow.locator(".rank-emblem.rank-emblem-8")',
 )
+must_replace(
+    "opendota-projection.spec.ts",
+    'participantRow.locator(".rank-medal.rank-tier-0")',
+    'participantRow.locator(".rank-emblem.rank-emblem-0")',
+)
 path = ROOT / "opendota-projection.spec.ts"
 text = path.read_text()
 rank_copy_count = text.count("Immortal #${state.leaderboardRank}")
 if rank_copy_count:
-    path.write_text(text.replace("Immortal #${state.leaderboardRank}", "Титан #${state.leaderboardRank}"))
+    text = text.replace("Immortal #${state.leaderboardRank}", "Титан #${state.leaderboardRank}")
+friend_code_count = text.count("Friend code: ${state.changedSteamFriendCode}")
+if friend_code_count:
+    text = text.replace("Friend code: ${state.changedSteamFriendCode}", "Код друга: ${state.changedSteamFriendCode}")
+path.write_text(text)
+if rank_copy_count:
     print(f"BROWSER_RUNTIME_POSTPATCH=OK file=opendota-projection.spec.ts rank-copy replacements={rank_copy_count}")
+if friend_code_count:
+    print(f"BROWSER_RUNTIME_POSTPATCH=OK file=opendota-projection.spec.ts friend-code replacements={friend_code_count}")
 
 # The public teams view is now modal. Anchor assertions to the intended surface instead of matching
 # duplicate text rendered by both the legacy route and the modal compatibility layer.
@@ -139,6 +151,22 @@ must_replace(
     'await expect(page.getByText(state.reserveName, { exact: true })).toBeVisible();',
     'await expect(page.getByRole("main").getByText(state.reserveName, { exact: true })).toBeVisible();',
 )
+must_replace(
+    "public-teams.spec.ts",
+    '''    await expect(page.locator("h1")).toHaveText(state.teamName);
+    await expect(page.getByText(state.externalName, { exact: true })).toBeVisible();
+    await expect(page.getByText("ВНЕШНИЙ", { exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Матчи команды", level: 2 })).toBeVisible();
+    await expect(page.getByText("Гранд-финал · BO5", { exact: true })).toBeVisible();
+    await expect(page.getByText(new RegExp(`${state.opponentName}.*идёт`))).toBeVisible();''',
+    '''    const teamDialog = page.getByRole("dialog", { name: "Состав команды" });
+    await expect(teamDialog.locator("h1")).toHaveText(state.teamName);
+    await expect(teamDialog.getByText(state.externalName, { exact: true })).toBeVisible();
+    await expect(teamDialog.getByText("ВНЕШНИЙ", { exact: true })).toBeVisible();
+    await expect(teamDialog.getByRole("heading", { name: "Матчи команды", level: 2 })).toBeVisible();
+    await expect(teamDialog.getByText("Гранд-финал · BO5", { exact: true })).toBeVisible();
+    await expect(teamDialog.getByText(new RegExp(`${state.opponentName}.*идёт`))).toBeVisible();''',
+)
 
 # The old organizer topbar was removed. Archive remains a dedicated operational fallback route,
 # so browser lifecycle coverage navigates to it directly after exercising the adaptive drawer.
@@ -150,4 +178,4 @@ if archive_nav_count:
     path.write_text(text.replace(old_archive_nav, '''    await organizerPage.goto("/organizer/archive");\n'''))
     print(f"BROWSER_RUNTIME_POSTPATCH=OK file=archive-trash-management.spec.ts archive-nav replacements={archive_nav_count}")
 
-print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v8-organizer-drawer-russian-ranks-modal-scope")
+print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v9-russian-friend-code-modal-dialog-scope")
