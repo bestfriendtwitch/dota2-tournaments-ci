@@ -32,12 +32,19 @@ regex_replace(
     r'''    const playerCheckInButton = playerPage\.getByRole\("button", \{ name: /PROYTI_SENTINEL/ \}\);'''.replace("PROYTI_SENTINEL", r"ПРОЙТИ CHECK-IN\|ПОДТВЕРДИТЬ УЧАСТИЕ"),
     '''    await expect(playerPage.getByRole("heading", { name: "Ожидаем открытия" })).toBeVisible();''',
 )
-# The regex above intentionally matches only the declaration; remove its now-obsolete follow-up.
 regex_replace(
     "checkin-operations.spec.ts",
     r'''    await expect\(playerCheckInButton\)\.toBeVisible\(\);\n    await playerCheckInButton\.click\(\);\n    await expect\(playerPage\.getByText\("Окно check-in сейчас закрыто", \{ exact: true \}\)\)\.toBeVisible\(\);\n''',
     "",
 )
+
+# The adaptive controls supply stable product audit reasons instead of browser-entered E2E text.
+for old, new in (
+    ('"E2E staff confirms check-in"', '"Check-in подтверждён организатором"'),
+    ('"E2E staff revokes check-in"', '"Check-in отменён организатором"'),
+    ('"E2E staff confirms after close"', '"Check-in подтверждён организатором"'),
+):
+    must_replace("checkin-operations.spec.ts", old, new)
 
 # Copy changed in the restored organizer match controls.
 must_replace(
@@ -60,8 +67,7 @@ must_replace(
     'getByText("Заявка отменена", { exact: true })',
 )
 
-# Inline result evidence uses a Unicode-ellipsis placeholder; target the semantic URL input
-# instead of a brittle ASCII placeholder string introduced by the first compatibility pass.
+# Inline result evidence uses a URL input; target it semantically rather than by placeholder copy.
 for file in (
     "result-advancement.spec.ts",
     "result-correct-accept.spec.ts",
@@ -96,4 +102,4 @@ regex_replace(
     "",
 )
 
-print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v3")
+print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v4-checkin-reasons")
