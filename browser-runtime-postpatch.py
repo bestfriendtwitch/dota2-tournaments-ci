@@ -124,6 +124,7 @@ must_replace(
     "opendota-projection.spec.ts",
     'participantRow.locator(".rank-medal.rank-tier-0")',
     'participantRow.locator(".rank-emblem.rank-emblem-0")',
+    count=2,
 )
 path = ROOT / "opendota-projection.spec.ts"
 text = path.read_text()
@@ -178,4 +179,4 @@ if archive_nav_count:
     path.write_text(text.replace(old_archive_nav, '''    await organizerPage.goto("/organizer/archive");\n'''))
     print(f"BROWSER_RUNTIME_POSTPATCH=OK file=archive-trash-management.spec.ts archive-nav replacements={archive_nav_count}")
 
-print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v9-russian-friend-code-modal-dialog-scope")
+print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v10-russian-friend-code-modal-dialog-scope")
