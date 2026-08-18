@@ -70,17 +70,6 @@ replace_exact(
     "organizer-drawer-open-checkin-v2",
 )
 
-# Current participant UI confirms check-in with a stable heading instead of the retired
-# English/Russian mixed marker "CHECK-IN ПРОЙДЕН". Verify that real post-click UI state.
-replace_exact(
-    relative,
-    '''    if (/CHECK-IN ПРОЙДЕН/i.test(await body(page))) checkedIn += 1;''',
-    '''    const confirmedHeading = page.getByRole("heading", { name: /Участие подтверждено/i }).first();
-    await confirmedHeading.waitFor({ state: "visible", timeout: 5_000 }).catch(() => undefined);
-    if (await confirmedHeading.isVisible().catch(() => false)) checkedIn += 1;''',
-    "participant-checkin-confirmed-v1",
-)
-
 replace_exact(
     relative,
     '''  let readyCount = await owner.locator(".checkin-ready").count();''',
@@ -117,4 +106,14 @@ replace_exact(
     "organizer-drawer-close-checkin-v2",
 )
 
-print("QA_RUNTIME_FINALPATCH_SET=replacement-hydration-v1+organizer-drawer-scope-v2+participant-checkin-confirmed-v1")
+# run-max-browser-audit-v3.sh first widens the short creation/check-in waits while generating
+# an isolated runtime copy. Keep its original source needle intact, but make the generated copy
+# assert the current stable participant heading instead of the retired CHECK-IN marker.
+replace_exact(
+    "infra/qa/run-max-browser-audit-v3.sh",
+    '''        'await page.waitForTimeout(180);\\n    if (/CHECK-IN ПРОЙДЕН/i.test(await body(page)))': 'await page.waitForTimeout(500);\\n    if (/CHECK-IN ПРОЙДЕН/i.test(await body(page)))',''',
+    '''        'await page.waitForTimeout(180);\\n    if (/CHECK-IN ПРОЙДЕН/i.test(await body(page)))': 'await page.waitForTimeout(500);\\n    const confirmedHeading = page.getByRole("heading", { name: /Участие подтверждено/i }).first();\\n    await confirmedHeading.waitFor({ state: "visible", timeout: 5_000 }).catch(() => undefined);\\n    if (await confirmedHeading.isVisible().catch(() => false))',''',
+    "generated-participant-checkin-confirmed-v2",
+)
+
+print("QA_RUNTIME_FINALPATCH_SET=replacement-hydration-v1+organizer-drawer-scope-v2+generated-participant-checkin-confirmed-v2")
