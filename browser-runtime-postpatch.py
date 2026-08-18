@@ -114,4 +114,35 @@ regex_replace(
     "",
 )
 
-print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v6-russian-participation-copy")
+# Rank names/classes changed with the Russian adaptive participant UI.
+must_replace(
+    "opendota-projection.spec.ts",
+    'participantRow.locator(".rank-medal.rank-tier-8")',
+    'participantRow.locator(".rank-emblem.rank-emblem-8")',
+)
+path = ROOT / "opendota-projection.spec.ts"
+text = path.read_text()
+rank_copy_count = text.count("Immortal #${state.leaderboardRank}")
+if rank_copy_count:
+    path.write_text(text.replace("Immortal #${state.leaderboardRank}", "Титан #${state.leaderboardRank}"))
+    print(f"BROWSER_RUNTIME_POSTPATCH=OK file=opendota-projection.spec.ts rank-copy replacements={rank_copy_count}")
+
+# The public teams view is now modal. Anchor the assertion to its team heading instead of every
+# nested article that inherits the team name through modal text content.
+must_replace(
+    "public-teams.spec.ts",
+    'const mixedCard = page.locator("article").filter({ hasText: state.teamName });',
+    'const mixedCard = page.getByRole("heading", { name: state.teamName, exact: true }).locator("xpath=ancestor::article[1]");',
+)
+
+# The old organizer topbar was removed. Archive remains a dedicated operational fallback route,
+# so browser lifecycle coverage navigates to it directly after exercising the adaptive drawer.
+path = ROOT / "archive-trash-management.spec.ts"
+text = path.read_text()
+old_archive_nav = '''    await organizerPage.getByRole("link", { name: "Архив" }).click();\n'''
+archive_nav_count = text.count(old_archive_nav)
+if archive_nav_count:
+    path.write_text(text.replace(old_archive_nav, '''    await organizerPage.goto("/organizer/archive");\n'''))
+    print(f"BROWSER_RUNTIME_POSTPATCH=OK file=archive-trash-management.spec.ts archive-nav replacements={archive_nav_count}")
+
+print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v7-organizer-drawer-russian-ranks")
