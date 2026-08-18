@@ -1,8 +1,8 @@
 {
   "version": 1,
   "enabled": true,
-  "request_id": "20260818T170600Z-max-playwright-pr118-final-v3",
-  "source_sha": "03fe45497a0b81b314121e323593acd2ceee0ccd",
+  "request_id": "20260818T174300Z-max-playwright-pr118-organizer-foundation-v4",
+  "source_sha": "a89ad84fad7f3b4decc459d15d9c93939a51d537",
   "suite": "max-playwright-v3",
-  "created_at": "2026-08-18T17:06:00Z"
+  "created_at": "2026-08-18T17:43:00Z"
 }
