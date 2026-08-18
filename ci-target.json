@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "f45175629e873af079fd11fb955c9bde2ef8f3f1",
-  "requested_at": "2026-08-18T19:53:00Z",
-  "purpose": "validate-pr118-merge-commit"
+  "source_sha": "711009dcc73c2718c07a8ecd1e6ad762eaf9504c",
+  "requested_at": "2026-08-18T22:26:00Z",
+  "purpose": "validate-pr119-menu-profile-hotfix"
 }
