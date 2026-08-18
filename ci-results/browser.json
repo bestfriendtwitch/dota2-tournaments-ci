@@ -4,9 +4,9 @@
   "source_sha": "c07fc249155346eeb270d37b28eb56f0950f055b",
   "status": "completed",
   "conclusion": "failure",
-  "run_id": 32082205420,
-  "run_number": 133,
-  "run_url": "https://github.com/bestfriendtwitch/dota2-tournaments-ci/actions/runs/32082205420",
-  "mirror_head_sha": "411561167bca7a25948f831a42efd41055464b1f",
-  "updated_at": "2026-08-18T00:09:28Z"
+  "run_id": 32082836575,
+  "run_number": 134,
+  "run_url": "https://github.com/bestfriendtwitch/dota2-tournaments-ci/actions/runs/32082836575",
+  "mirror_head_sha": "a0d379188f16bfecee634d4be51fc05ccf08079e",
+  "updated_at": "2026-08-18T00:19:22Z"
 }
