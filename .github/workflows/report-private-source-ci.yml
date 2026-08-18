@@ -6,7 +6,7 @@ on:
       - Private source platform CI
       - Private source browser CI
       - Private source max Playwright QA
-    types: [completed]
+    types: [requested, in_progress, completed]
 
 permissions:
   contents: write
@@ -64,12 +64,13 @@ jobs:
           RESULT_FILE: ${{ steps.result.outputs.result_file }}
           SOURCE_SHA: ${{ steps.result.outputs.source_sha }}
           WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          RUN_STATUS: ${{ github.event.workflow_run.status }}
           RUN_ID: ${{ github.event.workflow_run.id }}
           RUN_NUMBER: ${{ github.event.workflow_run.run_number }}
           RUN_URL: ${{ github.event.workflow_run.html_url }}
           RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          COMPLETED_AT: ${{ github.event.workflow_run.updated_at }}
+          UPDATED_AT: ${{ github.event.workflow_run.updated_at }}
         shell: bash
         run: |
           set -euo pipefail
@@ -79,16 +80,18 @@ jobs:
           import os
           from pathlib import Path
 
+          conclusion = os.environ.get("CONCLUSION") or None
           payload = {
-              "version": 1,
+              "version": 2,
               "workflow": os.environ["WORKFLOW_NAME"],
               "source_sha": os.environ["SOURCE_SHA"],
-              "conclusion": os.environ["CONCLUSION"],
+              "status": os.environ["RUN_STATUS"],
+              "conclusion": conclusion,
               "run_id": int(os.environ["RUN_ID"]),
               "run_number": int(os.environ["RUN_NUMBER"]),
               "run_url": os.environ["RUN_URL"],
               "mirror_head_sha": os.environ["RUN_HEAD_SHA"],
-              "completed_at": os.environ["COMPLETED_AT"],
+              "updated_at": os.environ["UPDATED_AT"],
           }
           path = Path(os.environ["RESULT_FILE"])
           path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
@@ -98,6 +101,7 @@ jobs:
         env:
           RESULT_FILE: ${{ steps.result.outputs.result_file }}
           SOURCE_SHA: ${{ steps.result.outputs.source_sha }}
+          RUN_STATUS: ${{ github.event.workflow_run.status }}
         shell: bash
         run: |
           set -euo pipefail
@@ -108,7 +112,7 @@ jobs:
             echo "Result already recorded"
             exit 0
           fi
-          git commit -m "ci: record ${RESULT_FILE##*/} for ${SOURCE_SHA:0:12}"
+          git commit -m "ci: record ${RESULT_FILE##*/} ${RUN_STATUS} for ${SOURCE_SHA:0:12}"
 
           for attempt in 1 2 3 4 5; do
             git pull --rebase origin main
