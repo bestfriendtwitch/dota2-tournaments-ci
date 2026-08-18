@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "86e8fa252d77651f57fc063360fbf8edfbcda8e1",
-  "requested_at": "2026-08-18T14:46:00Z",
-  "purpose": "validate-pr116-adaptive-browser-v4-checkin-reasons"
+  "source_sha": "01634701e2dd550abf05b08bcd80db55720b404d",
+  "requested_at": "2026-08-18T14:59:45Z",
+  "purpose": "production-gate-merged-pr116-adaptive-workspace"
 }
