@@ -106,6 +106,30 @@ replace_exact(
     "organizer-drawer-close-checkin-v2",
 )
 
+# The stress scenario used to read body text immediately after route readiness. On a busy
+# 64-player render the participant data can hydrate just after that 80ms boundary. Wait for the
+# same >=30 synthetic names that the original assertion requires, then keep the original count
+# assertion unchanged. This removes timing nondeterminism without weakening coverage.
+replace_exact(
+    "apps/e2e/qa/max-browser-audit-v2.mjs",
+    '''    await goto(page, "/?view=players", role);
+    const text = await bodyText(page);''',
+    '''    await goto(page, "/?view=players", role);
+    const participantNames = Object.entries(manifest.users)
+      .filter(([key]) => key !== "owner")
+      .map(([, user]) => user.displayName);
+    await page.waitForFunction(
+      (names) => {
+        const text = document.body?.innerText || "";
+        return names.filter((name) => text.includes(name)).length >= Math.min(30, names.length);
+      },
+      participantNames,
+      { timeout: 5_000 },
+    ).catch(() => undefined);
+    const text = await bodyText(page);''',
+    "stress-participant-hydration-v1",
+)
+
 # run-max-browser-audit-v3.sh first widens the short creation/check-in waits while generating
 # an isolated runtime copy. Keep its original source needle intact, but make the generated copy
 # assert the current stable participant heading instead of the retired CHECK-IN marker.
@@ -116,4 +140,4 @@ replace_exact(
     "generated-participant-checkin-confirmed-v2",
 )
 
-print("QA_RUNTIME_FINALPATCH_SET=replacement-hydration-v1+organizer-drawer-scope-v2+generated-participant-checkin-confirmed-v2")
+print("QA_RUNTIME_FINALPATCH_SET=replacement-hydration-v1+organizer-drawer-scope-v2+stress-participant-hydration-v1+generated-participant-checkin-confirmed-v2")
