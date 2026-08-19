@@ -39,14 +39,25 @@ replace(
 for file in ("archive-trash-management.spec.ts", "lifecycle-recovery.spec.ts"):
     replace(file, 'toContainText("В КОРЗИНЕ"', 'toContainText("В корзине"', required=False)
 replace("archive-trash-management.spec.ts", 'toContainText("ЗАВЕРШЁН"', 'toContainText("Завершён"', required=False)
+replace("archive-trash-management.spec.ts", 'toContainText("ОТМЕНЁН"', 'toContainText("Отменён"', required=False)
 replace("tournament-completion.spec.ts", 'toContainText("ЗАВЕРШЁН");', 'toContainText("Завершён");', required=False)
 
 # The current stage is already verified by the API/DB contract immediately below. The rebuilt
 # organizer surface does not expose a second technical lifecycle label as a user-facing contract.
+for file in ("checkin-operations.spec.ts", "registration-checkin.spec.ts"):
+    replace(
+        file,
+        '    await expect(organizerPage.locator(".organizer-lifecycle-state")).toContainText("Check-in");\n',
+        "",
+        required=False,
+    )
+
+# Closed check-in is represented by the ordinary player-facing message on the tournament page.
 replace(
     "checkin-operations.spec.ts",
-    '    await expect(organizerPage.locator(".organizer-lifecycle-state")).toContainText("Check-in");\n',
-    "",
+    'getByRole("heading", { name: "Ожидаем открытия" })',
+    'getByRole("heading", { name: "Подтверждение ещё не открыто" })',
+    required=False,
 )
 
 # Notification card keeps the unread state, with normal sentence casing.
@@ -109,4 +120,4 @@ replace(
     required=False,
 )
 
-print("UNIFIED_SHELL_BROWSER_PATCH_SET=v1")
+print("UNIFIED_SHELL_BROWSER_PATCH_SET=v2")
