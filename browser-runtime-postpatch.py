@@ -127,6 +127,27 @@ for old, new in (
         print(f"BROWSER_RUNTIME_POSTPATCH=OK file=opendota-projection.spec.ts copy replacements={actual}")
 path.write_text(text)
 
+# PR #119 replaces the legacy profile editor with the adaptive profile workspace. Keep the
+# OpenDota privacy contract intact while asserting the equivalent fields in the new UI.
+must_replace(
+    "opendota-projection.spec.ts",
+    '''    const form = playerPage.locator(".profile-editor");
+    await expect(form.getByText("STEAM НИК", { exact: true })).toBeVisible();
+    await expect(form.getByText("STEAM FRIEND CODE", { exact: true })).toBeVisible();
+    await expect(form.getByText("МЕДАЛЬ И ДИАПАЗОН MMR", { exact: true })).toBeVisible();
+    await expect(form.getByText("ИГРОВОЙ НИК", { exact: true })).toHaveCount(0);
+    await expect(form.getByText("ТОЧНЫЙ MMR", { exact: true })).toHaveCount(0);
+    await expect(form).toContainText("5620+ MMR");''',
+    '''    await expect(playerPage).toHaveURL(/\/profile$/);
+    const form = playerPage.locator(".profile-form");
+    await expect(form.getByText("Steam ник", { exact: true })).toBeVisible();
+    await expect(form.getByText("Friend code", { exact: true })).toBeVisible();
+    await expect(playerPage.getByText("ТЕКУЩИЙ РАНГ", { exact: true })).toBeVisible();
+    await expect(form.getByText("ИГРОВОЙ НИК", { exact: true })).toHaveCount(0);
+    await expect(form.getByText("ТОЧНЫЙ MMR", { exact: true })).toHaveCount(0);
+    await expect(playerPage.locator(".profile-rank-summary")).toContainText("5620+");''',
+)
+
 must_replace(
     "public-teams.spec.ts",
     'const mixedCard = page.locator("article").filter({ hasText: state.teamName });',
@@ -162,4 +183,4 @@ if actual:
     path.write_text(text.replace(old_archive_nav, '    await organizerPage.goto("/organizer/archive");\n'))
     print(f"BROWSER_RUNTIME_POSTPATCH=OK file=archive-trash-management.spec.ts archive-nav replacements={actual}")
 
-print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v11-stable-success-heading")
+print("BROWSER_RUNTIME_POSTPATCH_SET=adaptive-workspace-v12-profile-ui")
