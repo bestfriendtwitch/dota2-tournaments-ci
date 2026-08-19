@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "c0fefd6e529b2a82dd74c1cc939a43196718c7c7",
-  "requested_at": "2026-08-19T15:17:00Z",
-  "purpose": "revalidate-unified-manage-drawer-after-lint-fix"
+  "source_sha": "ea885704876849acaed41dfb8a13d072e087ef86",
+  "requested_at": "2026-08-19T16:16:00Z",
+  "purpose": "validate-ambient-motion-backgrounds"
 }
