@@ -7,6 +7,7 @@ on:
       - 'ci-target.json'
       - 'browser-runtime-patch.py'
       - 'browser-runtime-postpatch.py'
+      - 'browser-runtime-unified-shell-patch.py'
       - '.github/workflows/private-source-browser-ci.yml'
   workflow_dispatch:
 
@@ -67,9 +68,10 @@ jobs:
           set -euo pipefail
           python3 "$GITHUB_WORKSPACE/control/browser-runtime-patch.py"
           python3 "$GITHUB_WORKSPACE/control/browser-runtime-postpatch.py"
+          python3 "$GITHUB_WORKSPACE/control/browser-runtime-unified-shell-patch.py"
           test "$(git -C "$GITHUB_WORKSPACE/source" rev-parse HEAD)" = "${{ steps.target.outputs.source_sha }}"
           echo 'SOURCE_COMMIT_UNCHANGED=YES'
-          echo 'BROWSER_RUNTIME_PATCH=adaptive-workspace-v3'
+          echo 'BROWSER_RUNTIME_PATCH=unified-shell-v1'
 
       - uses: actions/setup-node@v4
         with:
