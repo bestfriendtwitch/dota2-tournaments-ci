@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "b4cd1c6db208a61dafa472530a5bd3242c400e88",
-  "requested_at": "2026-08-19T19:22:00Z",
-  "purpose": "validate-merged-pr-124-main"
+  "source_sha": "c60fd114fa16eb9e764af7a6be886a5a5754bc31",
+  "requested_at": "2026-08-19T21:59:00Z",
+  "purpose": "validate-pr-125-rank-medals-background-refresh"
 }
