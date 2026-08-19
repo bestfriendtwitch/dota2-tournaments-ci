@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "ea885704876849acaed41dfb8a13d072e087ef86",
-  "requested_at": "2026-08-19T16:16:00Z",
-  "purpose": "validate-ambient-motion-backgrounds"
+  "source_sha": "ebea8577f0e79ee3e4f04c9bf39cc253c7dc0d7d",
+  "requested_at": "2026-08-19T17:22:00Z",
+  "purpose": "validate-pr-124-direct-tournament-profile-sidebar-polish"
 }
