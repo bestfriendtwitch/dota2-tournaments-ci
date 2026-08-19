@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "2a246fd2521dba9af20e869392dce0c8ec99ef80",
-  "requested_at": "2026-08-18T22:50:30Z",
-  "purpose": "validate-pr119-menu-profile-hotfix-final"
+  "source_sha": "6085283debd60b82bb988f605a286c5c9c2a1e93",
+  "requested_at": "2026-08-19T02:44:30Z",
+  "purpose": "validate-pr120-standalone-navigation-consistency"
 }
