@@ -1,12 +1,12 @@
 {
   "version": 2,
   "workflow": "Private source browser CI",
-  "source_sha": "6760f4fcfa3c7e998379913e9d570aff56084d96",
+  "source_sha": "67df440b3f1c4477fde7a3e30d2b20f3e118e166",
   "status": "in_progress",
   "conclusion": null,
-  "run_id": 32213860062,
-  "run_number": 168,
-  "run_url": "https://github.com/bestfriendtwitch/dota2-tournaments-ci/actions/runs/32213860062",
-  "mirror_head_sha": "a55f0fc80e22db4c929df4886e69fdc3fe41dcfc",
-  "updated_at": "2026-08-19T03:55:24Z"
+  "run_id": 32214056510,
+  "run_number": 169,
+  "run_url": "https://github.com/bestfriendtwitch/dota2-tournaments-ci/actions/runs/32214056510",
+  "mirror_head_sha": "345d3f08a7a27986b4e11fc91d4279d9495b67cf",
+  "updated_at": "2026-08-19T03:58:44Z"
 }
