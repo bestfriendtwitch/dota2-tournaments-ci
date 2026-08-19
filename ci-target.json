@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "6085283debd60b82bb988f605a286c5c9c2a1e93",
-  "requested_at": "2026-08-19T02:44:30Z",
-  "purpose": "validate-pr120-standalone-navigation-consistency"
+  "source_sha": "6760f4fcfa3c7e998379913e9d570aff56084d96",
+  "requested_at": "2026-08-19T03:55:20Z",
+  "purpose": "validate-unified-frontend-rebuild"
 }
