@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "20d5da6f7d5d8b374499eb4653953a32616fb33f",
-  "requested_at": "2026-08-19T06:36:30Z",
-  "purpose": "validate-final-unified-frontend-with-clean-profile-copy"
+  "source_sha": "ece3f03a3ae272d4393ce56057e1c5f3ed68212f",
+  "requested_at": "2026-08-19T15:14:00Z",
+  "purpose": "validate-unified-manage-drawer-without-route-jump"
 }
