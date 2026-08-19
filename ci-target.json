@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "2c57e4df9304be90d9cdd4f061fa0426bcfb88ca",
-  "requested_at": "2026-08-19T04:03:25Z",
-  "purpose": "validate-unified-frontend-rebuild-final"
+  "source_sha": "625239c59c8cec423b4c31f1c73e77e18d40df41",
+  "requested_at": "2026-08-19T05:58:00Z",
+  "purpose": "validate-unified-frontend-rebuild-suspense-fix"
 }
