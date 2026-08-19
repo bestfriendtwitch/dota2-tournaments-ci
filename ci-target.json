@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "ff955adee9059978ef09f0bbeb9c7bd30afc0975",
-  "requested_at": "2026-08-19T06:33:00Z",
-  "purpose": "validate-unified-frontend-rebuild-final-polish"
+  "source_sha": "20d5da6f7d5d8b374499eb4653953a32616fb33f",
+  "requested_at": "2026-08-19T06:36:30Z",
+  "purpose": "validate-final-unified-frontend-with-clean-profile-copy"
 }
