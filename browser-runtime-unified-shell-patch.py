@@ -34,6 +34,11 @@ replace(
     '    await expect(adminPage.getByText("✓ Изменение сохранено", { exact: true })).toBeVisible();\n',
     "",
 )
+replace(
+    "archive-trash-management.spec.ts",
+    '    await expect(ownerPage.getByText("✓ Турнир удалён навсегда", { exact: true })).toBeVisible();\n',
+    "",
+)
 
 # Copy casing is presentation, not a domain invariant.
 for file in ("archive-trash-management.spec.ts", "lifecycle-recovery.spec.ts"):
@@ -120,4 +125,4 @@ replace(
     required=False,
 )
 
-print("UNIFIED_SHELL_BROWSER_PATCH_SET=v2")
+print("UNIFIED_SHELL_BROWSER_PATCH_SET=v3")
