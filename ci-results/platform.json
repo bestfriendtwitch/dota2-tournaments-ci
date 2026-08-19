@@ -2,11 +2,11 @@
   "version": 2,
   "workflow": "Private source platform CI",
   "source_sha": "c0fefd6e529b2a82dd74c1cc939a43196718c7c7",
-  "status": "in_progress",
-  "conclusion": null,
+  "status": "completed",
+  "conclusion": "success",
   "run_id": 32269157329,
   "run_number": 96,
   "run_url": "https://github.com/bestfriendtwitch/dota2-tournaments-ci/actions/runs/32269157329",
   "mirror_head_sha": "529a34a8ffa8859bc8556410ff0bf5eede2dc349",
-  "updated_at": "2026-08-19T15:17:31Z"
+  "updated_at": "2026-08-19T15:21:04Z"
 }
