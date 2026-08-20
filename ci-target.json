@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "95bc5c81182f7e8cb291aa6d746bffa70bcceba8",
-  "requested_at": "2026-08-19T23:36:00Z",
-  "purpose": "validate-pr-126-safe-docker-disk-cleanup"
+  "source_sha": "c77d99a799d4ff4e7b99972c5f01d53b14a2e2c6",
+  "requested_at": "2026-08-20T01:16:00Z",
+  "purpose": "validate-pr-127-authentic-site-backgrounds"
 }
