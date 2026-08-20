@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_sha": "9ddfc3638ca4825904ed57493712c14292280771",
-  "requested_at": "2026-08-20T11:20:00Z",
-  "purpose": "validate-pr-129-realistic-cinematic-backgrounds"
+  "source_sha": "ffbff0cb10facc125465068601dbd4d843580461",
+  "requested_at": "2026-08-20T11:54:00Z",
+  "purpose": "validate-merged-pr-129-realistic-cinematic-backgrounds"
 }
